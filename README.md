@@ -28,7 +28,8 @@ Mini PJT/
 │   ├── day1_compare.py            # 배치 비교와 그림
 │   ├── day2_model.py              # 분할·CV·학습·평가
 │   ├── day2_model_compare.py      # 20개 후보 비교
-│   └── day2_batch_calibration.py  # 새 배치 레이블 보정 실험
+│   ├── day2_batch_calibration.py  # 새 배치 레이블 보정 실험
+│   └── day2_visuals.py            # 배치 이동·수명 구간별 오차 시각화
 ├── results/
 │   ├── model_performance.csv       # 제출 형식 성능표
 │   └── day2/                      # 분할, 셀별 예측, 잔차 그림
@@ -55,6 +56,7 @@ python3 -m venv .venv
 .venv/bin/python src/day2_model_compare.py --stage screen
 .venv/bin/python src/day2_model_compare.py --stage diagnose
 .venv/bin/python src/day2_batch_calibration.py
+.venv/bin/python src/day2_visuals.py
 ```
 
 PDF는 `.venv/bin/python src/build_day1_pdf.py`와 `.venv/bin/python src/build_day1_pdf.py --day 2`로 다시 만듭니다. 라이브러리 버전은 [requirements.txt](requirements.txt)에 고정했습니다.
@@ -112,6 +114,8 @@ Batch 2의 실제 수명 중앙값은 **469사이클**, 예측 중앙값은 **74
 Batch 3에서는 1,000사이클 초과 19셀을 평균 **351사이클 짧게** 예측했습니다. `batch3_038`은 1,935사이클을 946사이클로 예측한 가장 큰 사례입니다. Batch 1의 최대 수명 1,227사이클을 넘어서는 구간이라 선형식의 외삽과 배치별 측정 조건 차이를 함께 봐야 합니다.
 
 셀별 근거는 `results/day2/cell_predictions.csv`, 그룹별 요약은 `results/day2/error_group_summary.csv`, 오차 상위 셀은 `results/day2/worst_errors.csv`에 있습니다.
+
+배치와 수명 구간에 따른 차이는 [입력 신호·실제 수명 분포](results/day2/figures/feature_target_shift.png), [Batch 2 기록별 실제·예측 수명](results/day2/figures/batch2_structure_bias.png), [수명 구간별 오차 방향](results/day2/figures/error_by_life_band.png), [후보 모델의 배치 간 성능 이동](results/day2/figures/candidate_transfer.png)에 시각화했습니다. 각 그래프의 해석과 제 판단은 [Day 2 보고서](DAY2-REPORT.md)에 적었습니다.
 
 ## ESS 도메인 해석과 한계
 

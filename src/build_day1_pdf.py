@@ -117,7 +117,6 @@ while i<len(lines):
         story.append(Paragraph(inline(line),styles['KSubtitle']));i+=1;continue
     if line.startswith('### '):story.append(Paragraph(inline(line[4:]),styles['KSubheading']));i+=1;continue
     if line.startswith('## '):
-        if DAY==2 and line=='## ESS 도메인 해석':story.append(PageBreak())
         story.append(Paragraph(inline(line[3:]),styles['KHeading']));i+=1;continue
     if line.startswith('|'):
         rows=[]
