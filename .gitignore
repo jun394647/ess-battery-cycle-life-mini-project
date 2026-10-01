@@ -1,0 +1,6 @@
+data/*
+!data/README.md
+.venv/
+__pycache__/
+.DS_Store
+30-ESSHealth-scratch.ipynb

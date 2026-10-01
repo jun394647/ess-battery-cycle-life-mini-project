@@ -1,0 +1,20 @@
+{
+  "chosen_model": "ridge_core_a1",
+  "features": [
+    "delta_q_logvar",
+    "early_mean_QD",
+    "early_mean_Tavg"
+  ],
+  "seed": 42,
+  "split": "GroupShuffleSplit by charging policy, test_size=0.2",
+  "cv": "GroupKFold(5) on development cells only",
+  "n_development": 35,
+  "n_holdout": 11,
+  "gaps": {
+    "valid_minus_train_pp": 4.347697854097435,
+    "test_minus_valid_pp": 37.66034187083902,
+    "test_minus_paper_9.1_pp": 39.5710545241231,
+    "batch3_minus_batch2_pp": -31.996090936022075,
+    "batch3_minus_paper_9.1_pp": 7.574963588101026
+  }
+}

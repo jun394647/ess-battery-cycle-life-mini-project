@@ -1,0 +1,60 @@
+{
+  "batch1": {
+    "issues": 0,
+    "details": []
+  },
+  "batch2": {
+    "issues": 9,
+    "details": [
+      {
+        "cell_id": "batch2_022",
+        "issue": "cycle_life missing; excluded from target-based analysis"
+      },
+      {
+        "cell_id": "batch2_023",
+        "issue": "cycle_life missing; excluded from target-based analysis"
+      },
+      {
+        "cell_id": "batch2_035",
+        "issue": "cycle_life missing; excluded from target-based analysis"
+      },
+      {
+        "cell_id": "batch2_036",
+        "issue": "cycle_life missing; excluded from target-based analysis"
+      },
+      {
+        "cell_id": "batch2_037",
+        "issue": "cycle_life missing; excluded from target-based analysis"
+      },
+      {
+        "cell_id": "batch2_038",
+        "issue": "cycle_life missing; excluded from target-based analysis"
+      },
+      {
+        "cell_id": "batch2_038",
+        "issue": "Tmax > 100 C in early cycles; inspect sensor or sentinel value"
+      },
+      {
+        "cell_id": "batch2_039",
+        "issue": "cycle_life missing; excluded from target-based analysis"
+      },
+      {
+        "cell_id": "batch2_040",
+        "issue": "cycle_life missing; excluded from target-based analysis"
+      }
+    ]
+  },
+  "batch3": {
+    "issues": 2,
+    "details": [
+      {
+        "cell_id": "batch3_023",
+        "issue": "cycle_life missing; excluded from target-based analysis"
+      },
+      {
+        "cell_id": "batch3_032",
+        "issue": "cycle_life missing; excluded from target-based analysis"
+      }
+    ]
+  }
+}
