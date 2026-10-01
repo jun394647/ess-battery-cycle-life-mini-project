@@ -7,6 +7,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from day1_eda import SCREEN_EXCLUSIONS, CONTINUATION_LENGTHS
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'results'
@@ -24,12 +25,17 @@ def policy_components(policy):
     return pd.Series({'policy_switch_soc': switch, 'second_c_rate': second,
                       'policy_rate_proxy': (first * switch + second * (80 - switch)) / 80})
 cell = pd.concat([cell, cell.policy.apply(policy_components)], axis=1)
-reference_exclusions = {
-    'batch2': {7, 8, 9, 15, 16},  # continued Batch 1 cells in the paper's Load Data notebook
-    'batch3': {2, 23, 32, 37, 42, 43},  # noisy channels in the same notebook
-}
+cell['life_adjustment_cycles'] = 0
+for index, extra in CONTINUATION_LENGTHS.items():
+    mask = (cell.batch == 'batch1') & (cell.cell_id == f'batch1_{index:03d}')
+    assert mask.sum() == 1
+    cell.loc[mask, 'cycle_life'] += extra
+    cell.loc[mask, 'life_adjustment_cycles'] = extra
+    # The Batch 1 summary ends before the continuation. A knee estimate from that
+    # truncated curve must not be treated as an observed full-life knee.
+    cell.loc[mask, ['knee_cycle', 'slope_before', 'slope_after']] = np.nan
 cell['reference_exclusion'] = cell.apply(
-    lambda r: int(r.cell_id.rsplit('_', 1)[1]) in reference_exclusions.get(r.batch, set()), axis=1)
+    lambda r: int(r.cell_id.rsplit('_', 1)[1]) in SCREEN_EXCLUSIONS.get(r.batch, set()), axis=1)
 cell.to_csv(OUT / 'all_cells.csv', index=False)
 analysis = cell.loc[~cell.reference_exclusion].copy()
 analysis.to_csv(OUT / 'paper_screened_cells.csv', index=False)
@@ -87,7 +93,7 @@ for row in range(len(heat_corr)):
         value=heat_corr.iloc[row,col]
         ax.text(col,row,f'{value:+.2f}',ha='center',va='center',fontsize=7,
                 color='white' if abs(value)>.68 else '#1b2933')
-ax.set_title('Batch 1: Pearson correlations among early features (n=46)',fontsize=11,pad=14)
+ax.set_title(f'Batch 1: Pearson correlations among early features (n={len(heat_data)})',fontsize=11,pad=14)
 fig.colorbar(im,ax=ax,shrink=.78,label='Pearson r')
 fig.tight_layout();fig.savefig(FIG/'batch1_feature_heatmap.png',dpi=180);plt.close(fig)
 
@@ -137,7 +143,9 @@ for ax,(batch,group) in zip(axes,analysis.dropna(subset=['cycle_life']).groupby(
 fig.tight_layout();fig.savefig(FIG/'compare_charge_time.png',dpi=160);plt.close(fig)
 
 # Experimental knee: compare late and early fitted slopes, but never as a predictor.
-analysis['knee_accelerates'] = analysis.slope_after < analysis.slope_before
+analysis['knee_accelerates'] = np.where(
+    analysis.slope_before.notna() & analysis.slope_after.notna(),
+    analysis.slope_after < analysis.slope_before, np.nan)
 knee = analysis.groupby('batch').agg(valid=('knee_cycle','count'),
                                   accelerates=('knee_accelerates','mean'),
                                   median_knee=('knee_cycle','median'))

@@ -42,33 +42,23 @@ def feature_target_shift(cells):
     plt.close(fig)
 
 
-def batch2_structure_bias(predictions):
+def batch2_dq_calibration(cells, predictions):
     b2 = predictions[predictions['set'] == 'test_batch2'].copy()
-    b2['newstructure'] = b2.policy.str.contains('newstructure', case=False, na=False)
+    b2 = b2.merge(cells[['cell_id', 'delta_q_logvar']], on='cell_id', validate='one_to_one')
     fig, ax = plt.subplots(figsize=(8.5, 4.3))
-    boxes = []
-    positions = []
-    for group, base in [(False, 1), (True, 3)]:
-        g = b2[b2.newstructure == group]
-        boxes.extend([g.actual.to_numpy(), g.predicted.to_numpy()])
-        positions.extend([base-.18, base+.18])
-    bp = ax.boxplot(boxes, positions=positions, widths=.28, patch_artist=True,
-                    showfliers=False, medianprops={'color': '#263340', 'linewidth': 1.7})
-    for i, patch in enumerate(bp['boxes']):
-        patch.set_facecolor('#93a9b7' if i % 2 == 0 else '#d56b48')
-        patch.set_alpha(.62)
-    rng = np.random.default_rng(42)
-    for i, values in enumerate(boxes):
-        ax.scatter(positions[i] + rng.normal(0, .035, len(values)), values,
-                   s=13, alpha=.6, color='#34495a' if i % 2 == 0 else '#a6452e')
-    ax.set(xticks=[1, 3], xticklabels=['No newstructure (n=28)', 'newstructure (n=6)'],
-           ylabel='Cycle life (cycles)', title='Batch 2: observed and predicted life by policy label')
+    for _, row in b2.iterrows():
+        ax.plot([row.delta_q_logvar]*2, [row.actual, row.predicted],
+                color='#aab4bc', alpha=.55, linewidth=.8)
+    ax.scatter(b2.delta_q_logvar, b2.actual, s=27, color='#34495a',
+               alpha=.78, label='Observed')
+    ax.scatter(b2.delta_q_logvar, b2.predicted, s=27, color='#d56b48',
+               alpha=.78, label='Predicted')
+    ax.set(xlabel='Early log10 var(ΔQ(V))', ylabel='Cycle life (cycles)',
+           title='Batch 2: early signal and life calibration')
     ax.grid(axis='y', alpha=.18)
-    ax.plot([], [], color='#93a9b7', linewidth=7, label='Observed')
-    ax.plot([], [], color='#d56b48', linewidth=7, label='Predicted')
     ax.legend(frameon=False, loc='upper left')
     fig.tight_layout()
-    fig.savefig(OUT / 'batch2_structure_bias.png', dpi=180)
+    fig.savefig(OUT / 'batch2_dq_calibration.png', dpi=180)
     plt.close(fig)
 
 
@@ -114,7 +104,7 @@ def candidate_transfer(comparison):
     comparison['group'] = np.where(comparison.family.isin(linear), 'Linear / transformed',
                                    'Tree / neighbor / kernel')
     palette = {'Linear / transformed': '#2a7f90', 'Tree / neighbor / kernel': '#d56b48'}
-    labels = {'ridge_core_a1': 'Ridge core', 'log_ridge_policy': 'Log Ridge + policy',
+    labels = {'log_ridge_core': 'Chosen log Ridge', 'log_ridge_policy': 'Log Ridge + policy',
               'tree_d2': 'Shallow tree', 'random_forest': 'Random Forest'}
     for ax, column, title in [(axes[0], 'batch2', 'Batch 2 MAPE'),
                               (axes[1], 'batch3', 'Batch 3 MAPE')]:
@@ -127,8 +117,8 @@ def candidate_transfer(comparison):
             ax.annotate(label, (row.cv_mape_pct, row[column]), xytext=offset,
                         textcoords='offset points', fontsize=7)
         rho = comparison.cv_mape_pct.corr(comparison[column], method='spearman')
-        ax.text(.03, .04, f'Spearman ρ = {rho:.2f}', transform=ax.transAxes,
-                va='bottom', fontsize=8)
+        ax.text(.03, .96, f'Spearman ρ = {rho:.2f}', transform=ax.transAxes,
+                va='top', fontsize=8)
         ax.set(xlabel='Batch 1 development CV MAPE (%)', ylabel=title, title=title)
         ax.grid(alpha=.18)
     axes[0].legend(frameon=False, fontsize=8, loc='lower right')
@@ -144,7 +134,7 @@ def main():
     preds = pd.read_csv(ROOT / 'results' / 'day2' / 'cell_predictions.csv')
     comparison = pd.read_csv(ROOT / 'results' / 'day2' / 'model_comparison' / 'comparison_table.csv')
     feature_target_shift(cells)
-    batch2_structure_bias(preds)
+    batch2_dq_calibration(cells, preds)
     error_by_life_band(preds)
     candidate_transfer(comparison)
     print('Saved four diagnostic figures to', OUT)

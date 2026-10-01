@@ -1,0 +1,49 @@
+{
+  "raw_and_feature_checks": {
+    "batch1": {
+      "raw_cells": 46,
+      "analysis_cells": 41,
+      "excluded": [
+        8,
+        10,
+        12,
+        13,
+        22
+      ]
+    },
+    "batch2": {
+      "raw_cells": 48,
+      "analysis_cells": 43,
+      "excluded": [
+        7,
+        8,
+        9,
+        15,
+        16
+      ]
+    },
+    "batch3": {
+      "raw_cells": 46,
+      "analysis_cells": 40,
+      "excluded": [
+        2,
+        23,
+        32,
+        37,
+        42,
+        43
+      ]
+    }
+  },
+  "model_checks": {
+    "development_cells": 31,
+    "holdout_cells": 10,
+    "model": "log_ridge_core",
+    "batch2_mape_pct": 24.674907172725575
+  },
+  "document_checks": {
+    "day1_figures": 7,
+    "day2_figures": 7,
+    "performance_rows_checked": 9
+  }
+}

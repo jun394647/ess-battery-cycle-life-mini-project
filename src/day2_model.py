@@ -18,6 +18,7 @@ from sklearn.model_selection import GroupKFold, GroupShuffleSplit
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeRegressor
+from sklearn.compose import TransformedTargetRegressor
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'results' / 'day2'
@@ -31,12 +32,16 @@ def candidates():
     ridge = lambda a: make_pipeline(SimpleImputer(strategy='median'), StandardScaler(), Ridge(alpha=a))
     elastic = lambda a: make_pipeline(SimpleImputer(strategy='median'), StandardScaler(),
                                       ElasticNet(alpha=a, l1_ratio=.5, max_iter=20000))
+    log_ridge = lambda: TransformedTargetRegressor(
+        regressor=ridge(1.0), func=np.log, inverse_func=np.exp)
     return {
         'median_baseline': (CORE, lambda: DummyRegressor(strategy='median')),
         'ridge_core_a0.1': (CORE, lambda: ridge(.1)),
         'ridge_core_a1': (CORE, lambda: ridge(1.0)),
         'ridge_core_a10': (CORE, lambda: ridge(10.0)),
         'ridge_policy_a1': (WITH_POLICY, lambda: ridge(1.0)),
+        'log_ridge_core': (CORE, log_ridge),
+        'log_ridge_policy': (WITH_POLICY, log_ridge),
         'elastic_core_a0.01': (CORE, lambda: elastic(.01)),
         'elastic_core_a0.1': (CORE, lambda: elastic(.1)),
         'tree_core_d2': (CORE, lambda: make_pipeline(SimpleImputer(strategy='median'),
@@ -49,7 +54,7 @@ def load_batches():
     df = pd.read_csv(DATA)
     batches = {name: df[(df.batch == name) & df.cycle_life.notna()].copy().reset_index(drop=True)
                for name in ('batch1', 'batch2', 'batch3')}
-    assert tuple(len(batches[k]) for k in batches) == (46, 34, 40)
+    assert tuple(len(batches[k]) for k in batches) == (41, 43, 40)
     assert not batches['batch1'].cell_id.isin(batches['batch2'].cell_id).any()
     return batches
 
@@ -121,8 +126,10 @@ def evaluate(model_name, dev, hold, batch1, batch2, batch3, summary):
                                 'ape_pct': 100 * abs(value - row.cycle_life) / row.cycle_life})
     pred_df = pd.DataFrame(predictions)
     pred_df.to_csv(OUT / 'cell_predictions.csv', index=False)
-    pred_df['newstructure'] = pred_df.policy.str.contains('newstructure', case=False, na=False)
-    error_groups = pred_df.groupby(['set', 'newstructure'], as_index=False).agg(
+    pred_df['life_band'] = np.select(
+        [pred_df.actual < 500, pred_df.actual > 1000],
+        ['<500', '>1000'], default='500–1000')
+    error_groups = pred_df.groupby(['set', 'life_band'], as_index=False).agg(
         n_cells=('cell_id', 'size'), actual_median=('actual', 'median'),
         mean_mape_pct=('ape_pct', 'mean'), mean_bias_cycles=('error', 'mean'))
     error_groups.to_csv(OUT / 'error_group_summary.csv', index=False)
@@ -142,9 +149,9 @@ def evaluate(model_name, dev, hold, batch1, batch2, batch3, summary):
            'batch3_minus_batch2_pp': test_scores['additional_batch3']['mape_pct'] - test_scores['test_batch2']['mape_pct'],
            'batch3_minus_paper_9.1_pp': test_scores['additional_batch3']['mape_pct'] - 9.1}
     reporting = pd.DataFrame([
-        {'구분': 'Train (Batch 1 CV)', 'MAPE (%)': cv_row.cv_mape_pct, '비고': '개발용 35셀, 정책별 5분할 평균'},
-        {'구분': 'Valid (Batch 1 Hold-out)', 'MAPE (%)': hold_scores['mape_pct'], '비고': '정책이 겹치지 않는 11셀'},
-        {'구분': 'Test (Batch 2)', 'MAPE (%)': test_scores['test_batch2']['mape_pct'], '비고': 'Batch 1 전체 학습 후 34셀 평가'},
+        {'구분': 'Train (Batch 1 CV)', 'MAPE (%)': cv_row.cv_mape_pct, '비고': f'개발용 {len(dev)}셀, 정책별 5분할 평균'},
+        {'구분': 'Valid (Batch 1 Hold-out)', 'MAPE (%)': hold_scores['mape_pct'], '비고': f'정책이 겹치지 않는 {len(hold)}셀'},
+        {'구분': 'Test (Batch 2)', 'MAPE (%)': test_scores['test_batch2']['mape_pct'], '비고': f'Batch 1 전체 학습 후 {len(batch2)}셀 평가'},
         {'구분': 'Gap (Train-Valid)', 'MAPE (%)': gap['valid_minus_train_pp'], '비고': 'Valid − Train, +는 검증 오차 증가, 단위 %p'},
         {'구분': 'Gap (Valid-Test)', 'MAPE (%)': gap['test_minus_valid_pp'], '비고': 'Batch 2 − Valid, +는 배치 이동 시 오차 증가, 단위 %p'},
         {'구분': 'Gap (Target-Test)', 'MAPE (%)': gap['test_minus_paper_9.1_pp'], '비고': 'Batch 2 − 논문 참고값 9.1%, 단위 %p'},

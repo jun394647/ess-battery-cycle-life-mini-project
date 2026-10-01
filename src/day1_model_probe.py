@@ -22,7 +22,7 @@ ROOT=Path(__file__).resolve().parents[1]
 OUT=ROOT/'results'
 df=pd.read_csv(OUT/'paper_screened_cells.csv')
 df=df[(df.batch=='batch1') & df.cycle_life.notna()].copy().reset_index(drop=True)
-assert len(df)==46
+assert len(df)==41
 
 basic=['early_mean_QD','early_mean_Tavg','early_mean_chargetime']
 delta=['delta_q_logvar']

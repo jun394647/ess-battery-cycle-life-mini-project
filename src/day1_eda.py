@@ -19,9 +19,15 @@ import pandas as pd
 
 FILES = {
     'batch1': '2017-05-12_batchdata_updated_struct_errorcorrect.mat',
-    'batch2': '2018-02-20_batchdata_updated_struct_errorcorrect.mat',
+    'batch2': '2017-06-30_batchdata_updated_struct_errorcorrect.mat',
     'batch3': '2018-04-12_batchdata_updated_struct_errorcorrect.mat',
 }
+SCREEN_EXCLUSIONS = {
+    'batch1': {8, 10, 12, 13, 22},
+    'batch2': {7, 8, 9, 15, 16},
+    'batch3': {2, 23, 32, 37, 42, 43},
+}
+CONTINUATION_LENGTHS = {0: 662, 1: 981, 2: 1060, 3: 208, 4: 482}
 NUMERIC = {'QD': 'QDischarge', 'QC': 'QCharge', 'IR': 'IR', 'Tavg': 'Tavg',
            'Tmax': 'Tmax', 'Tmin': 'Tmin', 'chargetime': 'chargetime'}
 
@@ -138,18 +144,31 @@ def extract(batch_name: str, data_dir: Path, out_dir: Path):
     cycle_df.to_csv(out_dir / f'{batch_name}_cycles.csv.gz', index=False, compression='gzip')
     cell_df.to_csv(out_dir / f'{batch_name}_cells.csv', index=False)
     (out_dir / f'{batch_name}_issues.json').write_text(json.dumps(issues, ensure_ascii=False, indent=2))
+    figure_cells = cell_df.loc[
+        ~cell_df.cell_id.str.rsplit('_', n=1).str[-1].astype(int).isin(SCREEN_EXCLUSIONS[batch_name])
+    ].copy()
+    if batch_name == 'batch1':
+        for index, extra in CONTINUATION_LENGTHS.items():
+            figure_cells.loc[figure_cells.cell_id == f'batch1_{index:03d}', 'cycle_life'] += extra
+    included = set(figure_cells.cell_id)
     fig, ax = plt.subplots(figsize=(9, 4))
-    ax.hist(cell_df.cycle_life, bins=np.arange(150, 2401, 100), edgecolor='white')
+    ax.hist(figure_cells.cycle_life, bins=np.arange(150, 2401, 100), edgecolor='white')
     ax.set(xlabel='Cycle life', ylabel='Cells', title=f'{batch_name}: cycle life')
     fig.tight_layout(); fig.savefig(fig_dir / f'{batch_name}_life.png', dpi=150); plt.close(fig)
     fig, ax = plt.subplots(figsize=(9, 5))
     for frame in cycles:
+        if frame.cell_id.iloc[0] not in included:
+            continue
         ok = frame['QD'].between(.5, 1.3)
         ax.plot(frame.loc[ok, 'cycle'], frame.loc[ok, 'QD'], alpha=.45, lw=.8)
     ax.set(xlabel='Cycle', ylabel='QD (Ah)', title=f'{batch_name}: discharge capacity')
     fig.tight_layout(); fig.savefig(fig_dir / f'{batch_name}_qd.png', dpi=150); plt.close(fig)
     fig, ax = plt.subplots(figsize=(9, 5))
     for cell_id, life, dq in dq_curves:
+        if cell_id not in included:
+            continue
+        if batch_name == 'batch1':
+            life = figure_cells.loc[figure_cells.cell_id == cell_id, 'cycle_life'].iloc[0]
         color = 'tab:blue' if life > 1000 else 'tab:red' if life < 500 else '0.6'
         # The source paper interpolates Qdlin at 1,000 points from 3.5 V to 2.0 V.
         ax.plot(np.linspace(3.5, 2.0, len(dq)), dq, color=color, alpha=.45, lw=.7)

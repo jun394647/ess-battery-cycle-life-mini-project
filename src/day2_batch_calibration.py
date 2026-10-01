@@ -18,7 +18,7 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True)
     batches = load_batches()
     batch1, batch2, batch3 = (batches[k] for k in ('batch1', 'batch2', 'batch3'))
-    fixed = candidates()['ridge_core_a1'][1]()
+    fixed = candidates()['log_ridge_core'][1]()
     fixed.fit(batch1[CORE], batch1.cycle_life)
     base = fixed.predict(batch2[CORE])
     actual = batch2.cycle_life.to_numpy()
@@ -68,6 +68,8 @@ def main():
           'ratio:', round(full_ratio, 3))
     print('Batch 3 MAPE with Batch 2 full-label shift (not an evaluated model):',
           round(100 * mean_absolute_percentage_error(batch3.cycle_life, b3_base + full_shift), 2))
+    print('Batch 3 MAPE with Batch 2 full-label ratio (not an evaluated model):',
+          round(100 * mean_absolute_percentage_error(batch3.cycle_life, b3_base * full_ratio), 2))
 
 
 if __name__ == '__main__':
