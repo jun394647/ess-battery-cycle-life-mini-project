@@ -42,6 +42,8 @@ Mini PJT/
 Python 3.14에서 검증했습니다. 원본 파일을 `data/`에 놓은 뒤 프로젝트 루트에서 실행합니다. 큰 `.mat` 파일을 한 번에 메모리에 올리지 않도록 배치별 추출을 별도 프로세스로 실행합니다.
 
 ```bash
+git clone https://github.com/jun394647/ess-battery-cycle-life-mini-project.git
+cd ess-battery-cycle-life-mini-project
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
 .venv/bin/python src/day1_eda.py batch1
