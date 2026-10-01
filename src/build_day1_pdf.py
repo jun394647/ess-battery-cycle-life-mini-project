@@ -34,6 +34,10 @@ styles.add(ParagraphStyle(name='KCaption',fontName='AppleGothic',fontSize=8,lead
 styles.add(ParagraphStyle(name='KPanel',fontName='AppleGothic',fontSize=8.6,leading=14,wordWrap='CJK'))
 styles.add(ParagraphStyle(name='KTocNumber',fontName='AppleGothic',fontSize=9,leading=13,textColor=colors.HexColor('#15689a')))
 styles.add(ParagraphStyle(name='KTocBody',fontName='AppleGothic',fontSize=8.7,leading=13,wordWrap='CJK'))
+if DAY==2:
+    styles['KBody'].spaceAfter=5
+    styles['KHeading'].spaceBefore=9
+    styles['KSubheading'].spaceBefore=7
 
 def inline(text):
     text=html.escape(text)
@@ -112,7 +116,9 @@ while i<len(lines):
     if line.startswith('**DS-MINI-Design'):
         story.append(Paragraph(inline(line),styles['KSubtitle']));i+=1;continue
     if line.startswith('### '):story.append(Paragraph(inline(line[4:]),styles['KSubheading']));i+=1;continue
-    if line.startswith('## '):story.append(Paragraph(inline(line[3:]),styles['KHeading']));i+=1;continue
+    if line.startswith('## '):
+        if DAY==2 and line=='## ESS 도메인 해석':story.append(PageBreak())
+        story.append(Paragraph(inline(line[3:]),styles['KHeading']));i+=1;continue
     if line.startswith('|'):
         rows=[]
         while i<len(lines) and lines[i].strip().startswith('|'):
