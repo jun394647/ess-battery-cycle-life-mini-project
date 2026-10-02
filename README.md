@@ -62,6 +62,8 @@
 
 대시보드 셀 데이터는 `.venv/bin/python src/build_dashboard.py`로 `results/model_inputs/`와 `results/day2/cell_predictions.csv`에서 다시 만들 수 있습니다.
 
+대시보드 변경은 [PR #1](https://github.com/jun394647/ess-battery-cycle-life-mini-project/pull/1)에서 검토·병합했습니다. 병합 커밋은 `c905bc1`입니다.
+
 ## 환경 설정
 
 Python 3.14에서 실행을 확인했습니다. 원본 파일로 EDA부터 다시 수행하려면 [data/README.md](data/README.md)의 세 `.mat` 파일을 `data/`에 내려받으세요. 원본 세 파일은 약 7.7GB입니다.
