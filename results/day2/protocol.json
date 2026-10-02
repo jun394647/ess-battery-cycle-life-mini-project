@@ -1,8 +1,9 @@
 {
-  "chosen_model": "log_ridge_dq_qd",
+  "chosen_model": "log_ridge_dq_qd_ir",
   "features": [
     "delta_q_logvar",
-    "early_mean_QD"
+    "early_mean_QD",
+    "early_mean_IR"
   ],
   "seed": 42,
   "split": "GroupShuffleSplit by charging policy, test_size=0.2",
@@ -10,11 +11,11 @@
   "n_development": 31,
   "n_holdout": 10,
   "gaps": {
-    "valid_minus_train_pp": 0.2275036381222959,
-    "test_minus_valid_pp": 16.299012959903887,
-    "test_minus_paper_9.1_pp": 15.014752647782052,
-    "batch3_minus_batch2_pp": -12.151340726937146,
-    "batch3_minus_paper_9.1_pp": 2.8634119208449054
+    "valid_minus_train_pp": 0.05626220895739387,
+    "test_minus_valid_pp": 12.237842111217788,
+    "test_minus_paper_9.1_pp": 10.292440956961459,
+    "batch3_minus_batch2_pp": -8.401501422870524,
+    "batch3_minus_paper_9.1_pp": 1.8909395340909345
   },
   "interpretation_limits": [
     "Day 1 exploratory model comparison used all Batch 1 cells before the Day 2 hold-out was fixed.",

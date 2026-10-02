@@ -47,8 +47,9 @@ def main() -> None:
 
     run('day2_model_compare.py', '--stage', 'screen')
     run('day2_feature_ablation.py')
+    run('day2_refinement.py')
     run('day2_model.py', '--stage', 'select')
-    run('day2_model.py', '--stage', 'evaluate', '--model', 'log_ridge_dq_qd')
+    run('day2_model.py', '--stage', 'evaluate', '--model', 'log_ridge_dq_qd_ir')
     run('day2_model_compare.py', '--stage', 'diagnose')
     run('day2_batch_calibration.py')
     run('day2_visuals.py')

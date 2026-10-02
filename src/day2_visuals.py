@@ -1,5 +1,6 @@
 """Diagnostic figures that connect Day 2 errors to batch and model choices."""
 from pathlib import Path
+import json
 
 import matplotlib
 matplotlib.use('Agg')
@@ -97,14 +98,14 @@ def error_by_life_band(predictions):
     plt.close(fig)
 
 
-def candidate_transfer(comparison):
+def candidate_transfer(comparison, chosen):
     fig, axes = plt.subplots(1, 2, figsize=(10.5, 4.3), sharex=True)
     linear = {'linear', 'ridge', 'elastic', 'robust', 'target_transform'}
     comparison = comparison.copy()
     comparison['group'] = np.where(comparison.family.isin(linear), 'Linear / transformed',
                                    'Tree / neighbor / kernel')
     palette = {'Linear / transformed': '#2a7f90', 'Tree / neighbor / kernel': '#d56b48'}
-    labels = {'log_ridge_dq_qd': 'Chosen log Ridge', 'log_ridge_policy': 'Log Ridge + policy',
+    labels = {chosen: 'Chosen log Ridge', 'log_ridge_policy': 'Log Ridge + policy',
               'tree_d2': 'Shallow tree', 'random_forest': 'Random Forest'}
     for ax, column, title in [(axes[0], 'batch2', 'Batch 2 MAPE'),
                               (axes[1], 'batch3', 'Batch 3 MAPE')]:
@@ -133,10 +134,11 @@ def main():
     cells = cells[cells.cycle_life.notna()]
     preds = pd.read_csv(ROOT / 'results' / 'day2' / 'cell_predictions.csv')
     comparison = pd.read_csv(ROOT / 'results' / 'day2' / 'model_comparison' / 'comparison_table.csv')
+    chosen = json.loads((ROOT / 'results/day2/protocol.json').read_text())['chosen_model']
     feature_target_shift(cells)
     batch2_dq_calibration(cells, preds)
     error_by_life_band(preds)
-    candidate_transfer(comparison)
+    candidate_transfer(comparison, chosen)
     print('Saved four diagnostic figures to', OUT)
 
 

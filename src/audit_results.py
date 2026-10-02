@@ -168,6 +168,23 @@ def document_checks():
     day1 = (ROOT / 'DAY1-REPORT.md').read_text()
     day2 = (ROOT / 'DAY2-REPORT.md').read_text()
     readme = (ROOT / 'README.md').read_text()
+    for filename, content in [('DAY1-REPORT.md', day1), ('DAY2-REPORT.md', day2)]:
+        lines = content.splitlines()
+        start = lines.index('## 목차')
+        end = next(i for i in range(start + 1, len(lines)) if lines[i].startswith('## '))
+        actual_toc = [line for line in lines[start + 1:end] if line.strip()]
+        sections = []
+        for line in lines[end:]:
+            if line.startswith('## '):
+                sections.append([line[3:], []])
+            elif line.startswith('### '):
+                sections[-1][1].append(line[4:])
+        expected_toc = []
+        for title, subtitles in sections:
+            expected_toc.append('- ' + title)
+            if subtitles:
+                expected_toc.append('  - ' + ' · '.join(subtitles))
+        assert actual_toc == expected_toc, f'{filename}: table of contents differs from headings'
     for content in (day1, day2, readme):
         assert '2017-06-30' in content
         assert '41·43·40' in content or all(x in content for x in ['41셀', '43셀', '40셀'])
@@ -185,9 +202,25 @@ def document_checks():
     assert f'| Test (Batch 2) | **{batch2_mape:.2f}**' in day2
     assert f'| Test (Batch 2) | **{batch2_mape:.2f}**' in readme
     screen = pd.read_csv(RESULTS / 'day2/model_comparison/screen_summary.csv').set_index('model')
-    assert len(screen) == 21
-    for name in ('log_ridge_dq_qd', 'log_ridge_core', 'log_ridge_policy'):
+    assert len(screen) == 22
+    for name in ('log_ridge_dq_qd_ir', 'log_ridge_dq_qd', 'log_ridge_core', 'log_ridge_policy'):
         assert f'{screen.loc[name, "cv_mape_pct"]:.2f}' in day2
+    refinement = pd.read_csv(RESULTS / 'day2/refinement_summary.csv').set_index('trial')
+    assert np.isclose(refinement.loc['dq_qd_ir_a0.1', 'cv_mape_pct'],
+                      screen.loc['log_ridge_dq_qd_ir', 'cv_mape_pct'])
+    assert np.isclose(refinement.loc['dq_qd_a1', 'cv_mape_pct'],
+                      screen.loc['log_ridge_dq_qd', 'cv_mape_pct'])
+    robustness = pd.read_csv(RESULTS / 'day2/refinement_robustness.csv')
+    for n_splits, group in robustness.groupby('n_splits'):
+        values = group.set_index('trial').mean_mape_pct
+        assert set(values.index) == {'dq_qd_a1', 'dq_qd_ir_a0.1'}
+        assert values['dq_qd_ir_a0.1'] < values['dq_qd_a1'], n_splits
+    correlations = pd.read_csv(RESULTS / 'day2/refinement_correlations.csv', index_col=0)
+    split = pd.read_csv(RESULTS / 'day2/batch1_split.csv')
+    batch1 = pd.read_csv(RESULTS / 'model_inputs/batch1.csv').set_index('cell_id')
+    development = batch1.loc[split.loc[split.split == 'development', 'cell_id']]
+    recalculated_corr = development[correlations.columns].corr(method='pearson')
+    assert np.allclose(correlations.to_numpy(), recalculated_corr.to_numpy())
     ablation = pd.read_csv(RESULTS / 'day2/feature_ablation.csv').set_index('feature_set')
     assert set(ablation.index) == {'dq_only', 'dq_qd', 'dq_tavg', 'dq_qd_tavg'}
     assert np.isclose(ablation.loc['dq_qd', 'cv_mape_pct'], screen.loc['log_ridge_dq_qd', 'cv_mape_pct'])
@@ -205,7 +238,8 @@ def document_checks():
     return {'day1_figures': len(re.findall(r'!\[[^]]*\]\([^)]+\)', day1)),
             'day2_figures': len(re.findall(r'!\[[^]]*\]\([^)]+\)', day2)),
             'performance_rows_checked': len(table), 'candidate_configs_checked': len(screen),
-            'feature_ablation_sets_checked': len(ablation)}
+            'feature_ablation_sets_checked': len(ablation),
+            'refinement_trials_checked': len(refinement)}
 
 
 def main():

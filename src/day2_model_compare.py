@@ -23,7 +23,7 @@ from sklearn.svm import SVR
 from sklearn.compose import TransformedTargetRegressor
 from sklearn.tree import DecisionTreeRegressor
 
-from day2_model import CORE, LEAN, WITH_POLICY, ROOT, load_batches, split_batch1
+from day2_model import CORE, LEAN, WITH_IR, WITH_POLICY, ROOT, load_batches, split_batch1
 
 OUT = ROOT / 'results' / 'day2' / 'model_comparison'
 
@@ -31,8 +31,8 @@ OUT = ROOT / 'results' / 'day2' / 'model_comparison'
 def definitions():
     scaled = lambda model: make_pipeline(SimpleImputer(strategy='median'), StandardScaler(), model)
     trees = lambda model: make_pipeline(SimpleImputer(strategy='median'), model)
-    log_ridge = lambda columns: TransformedTargetRegressor(
-        regressor=scaled(Ridge(alpha=1.0)), func=np.log, inverse_func=np.exp)
+    log_ridge = lambda alpha=1.0: TransformedTargetRegressor(
+        regressor=scaled(Ridge(alpha=alpha)), func=np.log, inverse_func=np.exp)
     return {
         'median': ('baseline', CORE, lambda: DummyRegressor(strategy='median')),
         'linear_core': ('linear', CORE, lambda: scaled(LinearRegression())),
@@ -43,9 +43,10 @@ def definitions():
         'elastic_core_a0.01': ('elastic', CORE, lambda: scaled(ElasticNet(alpha=.01, l1_ratio=.5, max_iter=20000))),
         'elastic_core_a0.1': ('elastic', CORE, lambda: scaled(ElasticNet(alpha=.1, l1_ratio=.5, max_iter=20000))),
         'huber_core': ('robust', CORE, lambda: scaled(HuberRegressor(epsilon=1.35, alpha=1.0, max_iter=1000))),
-        'log_ridge_core': ('target_transform', CORE, lambda: log_ridge(CORE)),
-        'log_ridge_dq_qd': ('target_transform', LEAN, lambda: log_ridge(LEAN)),
-        'log_ridge_policy': ('target_transform', WITH_POLICY, lambda: log_ridge(WITH_POLICY)),
+        'log_ridge_core': ('target_transform', CORE, log_ridge),
+        'log_ridge_dq_qd': ('target_transform', LEAN, log_ridge),
+        'log_ridge_dq_qd_ir': ('target_transform', WITH_IR, lambda: log_ridge(.1)),
+        'log_ridge_policy': ('target_transform', WITH_POLICY, log_ridge),
         'svr_rbf_c1': ('kernel', CORE, lambda: TransformedTargetRegressor(
             regressor=scaled(SVR(kernel='rbf', C=1.0, epsilon=.1)), transformer=StandardScaler())),
         'svr_rbf_c10': ('kernel', CORE, lambda: TransformedTargetRegressor(

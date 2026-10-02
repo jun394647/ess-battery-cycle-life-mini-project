@@ -26,6 +26,7 @@ MODEL_INPUTS = ROOT / 'results' / 'model_inputs'
 SEED = 42
 CORE = ['delta_q_logvar', 'early_mean_QD', 'early_mean_Tavg']
 LEAN = ['delta_q_logvar', 'early_mean_QD']
+WITH_IR = LEAN + ['early_mean_IR']
 WITH_POLICY = CORE + ['policy_rate_proxy']
 
 
@@ -33,8 +34,8 @@ def candidates():
     ridge = lambda a: make_pipeline(SimpleImputer(strategy='median'), StandardScaler(), Ridge(alpha=a))
     elastic = lambda a: make_pipeline(SimpleImputer(strategy='median'), StandardScaler(),
                                       ElasticNet(alpha=a, l1_ratio=.5, max_iter=20000))
-    log_ridge = lambda: TransformedTargetRegressor(
-        regressor=ridge(1.0), func=np.log, inverse_func=np.exp)
+    log_ridge = lambda a=1.0: TransformedTargetRegressor(
+        regressor=ridge(a), func=np.log, inverse_func=np.exp)
     return {
         'median_baseline': (CORE, lambda: DummyRegressor(strategy='median')),
         'ridge_core_a0.1': (CORE, lambda: ridge(.1)),
@@ -43,6 +44,7 @@ def candidates():
         'ridge_policy_a1': (WITH_POLICY, lambda: ridge(1.0)),
         'log_ridge_core': (CORE, log_ridge),
         'log_ridge_dq_qd': (LEAN, log_ridge),
+        'log_ridge_dq_qd_ir': (WITH_IR, lambda: log_ridge(.1)),
         'log_ridge_policy': (WITH_POLICY, log_ridge),
         'elastic_core_a0.01': (CORE, lambda: elastic(.01)),
         'elastic_core_a0.1': (CORE, lambda: elastic(.1)),

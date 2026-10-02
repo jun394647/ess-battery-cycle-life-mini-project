@@ -1,0 +1,6 @@
+trial,features,alpha,cv_mape_pct,cv_mape_sd
+dq_qd_meanabs_a0.1,delta_q_logvar+early_mean_QD+delta_q_mean_abs,0.1,6.660987791623377,2.095825147512138
+dq_qd_ir_a0.1,delta_q_logvar+early_mean_QD+early_mean_IR,0.1,7.098336636786277,2.1085727396888507
+dq_qd_ir_a1,delta_q_logvar+early_mean_QD+early_mean_IR,1.0,7.3013764959484035,2.44339659441606
+dq_qd_a0.1,delta_q_logvar+early_mean_QD,0.1,7.5275979909328425,2.0254319832602845
+dq_qd_a1,delta_q_logvar+early_mean_QD,1.0,7.588236049755869,2.4210168983939155
