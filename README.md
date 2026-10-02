@@ -171,6 +171,8 @@ Batch 1의 반복 정책을 보면 `3.6C(80%)-3.6C`는 **3셀 평균 2,083사이
 | Gap (Batch2-Batch3) | **−8.40%p** | Batch 3 − Batch 2 |
 | Gap (Target-Test, Batch 3) | **+1.89%p** | Batch 3 − 9.1% |
 
+Batch 2에서 **예측 수명과 실제 수명의 평균 절대 차이(MAE)는 91.25사이클**입니다. 오차의 방향까지 포함한 평균은 **+74.99사이클**로, 전체적으로 실제보다 길게 예측했습니다. MAPE **19.39%**는 이 사이클 차이를 각 셀의 실제 수명으로 나누어 평균한 비율입니다.
+
 Batch 2 오차는 내부 hold-out보다 **12.24%p** 높았습니다. 논문 초록의 **9.1%**보다 **10.29%p** 높지만, 두 수치를 같은 테스트 설계로 읽으면 안 됩니다. [원논문](https://web.mit.edu/braatzgroup/Severson_NatureEnergy_2019.pdf)의 Primary test 전체 셀 MAPE는 표 1에서 Full 모델 **14.1%**, Discharge 모델 **13.0%**입니다. 공개 분할은 Batch 1·2를 섞어 학습·시험으로 나누고, 이 과제는 **Batch 1만 학습 → Batch 2 전체 테스트**입니다. 과제 기준에 맞춘 성능표는 [`results/model_performance.csv`](results/model_performance.csv)에 있습니다.
 
 ## 오류 분석

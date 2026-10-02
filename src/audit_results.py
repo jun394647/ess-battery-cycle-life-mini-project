@@ -239,6 +239,10 @@ def document_checks():
     pred = pd.read_csv(RESULTS / 'day2/cell_predictions.csv')
     b2 = pred[pred['set'] == 'test_batch2']
     b3 = pred[pred['set'] == 'additional_batch3']
+    batch2_mae = np.mean(np.abs(b2.predicted - b2.actual))
+    batch2_bias = np.mean(b2.predicted - b2.actual)
+    assert f'{batch2_mae:.2f}사이클' in readme
+    assert f'{batch2_bias:+.2f}사이클' in readme
     assert f'{b2.predicted.median():.0f}사이클' in day2
     assert f'{(b2[b2.actual < 500].error.mean()):.0f}사이클' in day2
     assert f'{abs(b3[b3.actual > 1000].error.mean()):.0f}사이클' in day2
