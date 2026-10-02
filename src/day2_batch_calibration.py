@@ -9,7 +9,7 @@ import pandas as pd
 from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error
 from sklearn.model_selection import GroupShuffleSplit
 
-from day2_model import CORE, load_batches, candidates
+from day2_model import LEAN, load_batches, candidates
 
 OUT = Path(__file__).resolve().parents[1] / 'results' / 'day2' / 'batch_calibration'
 
@@ -18,9 +18,9 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True)
     batches = load_batches()
     batch1, batch2, batch3 = (batches[k] for k in ('batch1', 'batch2', 'batch3'))
-    fixed = candidates()['log_ridge_core'][1]()
-    fixed.fit(batch1[CORE], batch1.cycle_life)
-    base = fixed.predict(batch2[CORE])
+    fixed = candidates()['log_ridge_dq_qd'][1]()
+    fixed.fit(batch1[LEAN], batch1.cycle_life)
+    base = fixed.predict(batch2[LEAN])
     actual = batch2.cycle_life.to_numpy()
     splitter = GroupShuffleSplit(n_splits=50, train_size=1 / 3, random_state=42)
     rows = []
@@ -62,7 +62,7 @@ def main():
 
     full_shift = float(np.median(actual - base))
     full_ratio = float(np.median(actual / base))
-    b3_base = fixed.predict(batch3[CORE])
+    b3_base = fixed.predict(batch3[LEAN])
     print(summary.round(2).to_string(index=False))
     print('Batch 2 full-label median shift (diagnostic only):', round(full_shift, 2),
           'ratio:', round(full_ratio, 3))

@@ -38,12 +38,14 @@
   "model_checks": {
     "development_cells": 31,
     "holdout_cells": 10,
-    "model": "log_ridge_core",
-    "batch2_mape_pct": 24.674907172725575
+    "model": "log_ridge_dq_qd",
+    "batch2_mape_pct": 24.11475264778205
   },
   "document_checks": {
-    "day1_figures": 7,
-    "day2_figures": 7,
-    "performance_rows_checked": 9
+    "day1_figures": 9,
+    "day2_figures": 8,
+    "performance_rows_checked": 9,
+    "candidate_configs_checked": 21,
+    "feature_ablation_sets_checked": 4
   }
 }

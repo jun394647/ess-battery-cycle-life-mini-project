@@ -104,7 +104,7 @@ def candidate_transfer(comparison):
     comparison['group'] = np.where(comparison.family.isin(linear), 'Linear / transformed',
                                    'Tree / neighbor / kernel')
     palette = {'Linear / transformed': '#2a7f90', 'Tree / neighbor / kernel': '#d56b48'}
-    labels = {'log_ridge_core': 'Chosen log Ridge', 'log_ridge_policy': 'Log Ridge + policy',
+    labels = {'log_ridge_dq_qd': 'Chosen log Ridge', 'log_ridge_policy': 'Log Ridge + policy',
               'tree_d2': 'Shallow tree', 'random_forest': 'Random Forest'}
     for ax, column, title in [(axes[0], 'batch2', 'Batch 2 MAPE'),
                               (axes[1], 'batch3', 'Batch 3 MAPE')]:

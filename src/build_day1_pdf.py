@@ -60,6 +60,9 @@ while i<len(lines):
     line=lines[i].strip()
     if not line:
         i+=1;continue
+    if line == '<!-- PAGE BREAK -->':
+        story.append(PageBreak())
+        i+=1;continue
     if line in ('## 요약', '## 목차'):
         heading=line[3:]
         story.append(Paragraph(heading,styles['KHeading']))

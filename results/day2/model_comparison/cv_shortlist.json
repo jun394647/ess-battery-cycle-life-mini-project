@@ -1,5 +1,5 @@
 [
-  "log_ridge_policy",
+  "log_ridge_dq_qd",
   "random_forest_policy",
   "ridge_core_a10",
   "svr_rbf_c1",
