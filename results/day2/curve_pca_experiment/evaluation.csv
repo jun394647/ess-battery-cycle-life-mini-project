@@ -1,0 +1,5 @@
+candidate,set,n_cells,mape_pct
+shape_pca1_a0.1,batch2,43,19.39752237106293
+shape_pca1_a0.1,batch3,40,11.256769769819929
+shape_pca2_a0.1,batch2,43,24.24038986398892
+shape_pca2_a0.1,batch3,40,13.022429716954697

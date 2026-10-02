@@ -45,11 +45,11 @@
   },
   "document_checks": {
     "day1_figures": 9,
-    "day2_figures": 9,
+    "day2_figures": 10,
     "performance_rows_checked": 9,
     "candidate_configs_checked": 22,
     "feature_ablation_sets_checked": 4,
     "refinement_trials_checked": 5,
-    "further_experiments_checked": 4
+    "further_experiments_checked": 7
   }
 }

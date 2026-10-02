@@ -256,12 +256,41 @@ def document_checks():
     assert np.isclose(mixed.loc['combined', 'mape_pct'], mixed_predictions.ape_pct.mean())
     assert f'{mixed.loc["combined", "mape_pct"]:.2f}%' in day2
     assert '14.1%' in day2 and '13.0%' in day2
+    alternatives = pd.read_csv(RESULTS / 'day2/alternative_methods/comparison.csv').set_index('method')
+    baseline_batch2 = pd.read_csv(RESULTS / 'day2/performance.csv').set_index('set').loc['Test (Batch 2)', 'mape_pct']
+    assert np.isclose(alternatives.loc['current_log_ridge', 'batch2_mape_pct'],
+                      baseline_batch2)
+    dynamics = pd.read_csv(RESULTS / 'day2/curve_dynamics_experiment/screen.csv').set_index('candidate')
+    assert np.isclose(dynamics.loc['current_3', 'cv_mape_pct'],
+                      alternatives.loc['current_log_ridge', 'batch1_cv_mape_pct'])
+    assert (dynamics.drop('current_3').cv_mape_pct > dynamics.loc['current_3', 'cv_mape_pct']).all()
+    pca = pd.read_csv(RESULTS / 'day2/curve_pca_experiment/evaluation.csv')
+    inverse = pd.read_csv(RESULTS / 'day2/inverse_life_experiment/evaluation.csv')
+    for name, evaluation in [('curve_pca_experiment', pca), ('inverse_life_experiment', inverse)]:
+        predictions = pd.read_csv(RESULTS / f'day2/{name}/predictions.csv')
+        keys = ['candidate', 'set'] if name == 'curve_pca_experiment' else ['set']
+        for key, group in predictions.groupby(keys):
+            values = key if isinstance(key, tuple) else (key,)
+            selected = evaluation
+            for column, value in zip(keys, values):
+                selected = selected[selected[column] == value]
+            assert len(selected) == 1
+            row = selected.iloc[0]
+            assert len(group) == row.n_cells
+            assert np.isclose(group.ape_pct.mean(), row.mape_pct)
+            assert np.isclose(100 * mean_absolute_percentage_error(group.actual, group.predicted), row.mape_pct)
+            if group['set'].iloc[0] == 'batch2':
+                assert f'{row.mape_pct:.2f}%' in day2
+    assert np.isclose(alternatives.loc['shape_pca1_a0.1', 'batch2_mape_pct'],
+                      pca.set_index(['candidate', 'set']).loc[('shape_pca1_a0.1', 'batch2'), 'mape_pct'])
+    assert np.isclose(alternatives.loc['inverse_life_dq_qd_a1', 'batch2_mape_pct'],
+                      inverse.set_index('set').loc['batch2', 'mape_pct'])
     return {'day1_figures': len(re.findall(r'!\[[^]]*\]\([^)]+\)', day1)),
             'day2_figures': len(re.findall(r'!\[[^]]*\]\([^)]+\)', day2)),
             'performance_rows_checked': len(table), 'candidate_configs_checked': len(screen),
             'feature_ablation_sets_checked': len(ablation),
             'refinement_trials_checked': len(refinement),
-            'further_experiments_checked': 4}
+            'further_experiments_checked': 7}
 
 
 def main():

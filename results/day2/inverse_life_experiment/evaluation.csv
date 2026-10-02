@@ -1,0 +1,3 @@
+features,alpha,set,n_cells,mape_pct
+dq_qd,1.0,batch2,43,32.63356497175429
+dq_qd,1.0,batch3,40,15.363757299872391

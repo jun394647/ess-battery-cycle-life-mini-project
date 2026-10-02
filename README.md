@@ -38,6 +38,10 @@ Mini PJT/
 │   ├── day2_feature_ablation.py   # ΔQ·QD·Tavg 제거 실험
 │   ├── day2_refinement.py         # 초기 내부저항 추가 실험
 │   ├── day2_batch_calibration.py  # Batch 2 레이블 보정 실험
+│   ├── day2_curve_dynamics_experiment.py # 초기 곡선 구간별 변화 시험
+│   ├── day2_curve_pca_experiment.py      # 전체 곡선 형태 PCA 시험
+│   ├── day2_inverse_life_experiment.py   # 수명 역수 예측 시험
+│   ├── day2_alternative_summary.py       # 새 실험 성능 비교 그림
 │   ├── day2_visuals.py            # 배치 이동·오차 시각화
 │   ├── audit_results.py           # 원본·피처·분할·성능 재검증
 │   ├── reproduce.py               # 전체 분석·보고서 순서대로 재생성
@@ -114,6 +118,19 @@ Batch 1에서만 후보를 비교하고 이후 Batch 2를 사후 평가했습니
 | 새 배치의 정답 없이 입력 분포로 가중치 조정 | 6.94% | 6.77% | 19.91% |
 
 논문의 공개 분할처럼 Batch 1·2를 섞어 현재 모델을 다시 학습·시험하면 MAPE는 **11.16%**였습니다. 이는 분할의 영향을 살펴본 사후 진단이며 과제 필수 성능을 대체하지 않습니다. 실험별 변수 정의, 측정값 이상치, 모델 유지 판단은 [Day 2 보고서](DAY2-REPORT.md)에 적었습니다. 추가 실험 코드는 `src/day2_trajectory_experiment.py`, `src/day2_paper_feature_experiment.py`, `src/day2_shortlife_experiment.py`, `src/day2_covariate_shift_experiment.py`, `src/day2_gap_alignment_experiment.py`, `src/day2_paper_split_diagnostic.py`에 있습니다. 원자료가 필요한 실험도 있으므로 기본 `reproduce.py --from-results`에는 포함하지 않았습니다.
+
+### 곡선 정보와 목표값을 바꾼 추가 시험
+
+100회−10회 곡선의 분산이 놓친 정보를 찾기 위해 10→50회와 50→100회 변화를 분리하고, 곡선 형태를 PCA로 압축했습니다. 또 `1/cycle_life`를 열화 속도의 대리 목표값으로 예측했습니다. 정책별 Batch 1 CV와 hold-out을 먼저 비교한 결과입니다.
+
+| 모델 | Batch 1 CV | Batch 1 hold-out | Batch 2 |
+|---|---:|---:|---:|
+| 현재 3변수 로그 Ridge | **7.10%** | **7.15%** | **19.39%** |
+| 곡선 형태 PCA 1축 추가 | 7.08% | 7.07% | 19.40% |
+| 곡선 형태 PCA 2축 추가 | 7.07% | 7.45% | 24.24% |
+| 수명 역수 예측 | 6.18% | 28.34% | 32.63% |
+
+구간별 곡선 변수를 추가한 후보는 Batch 1 CV부터 모두 기존 모델보다 나빴습니다. PCA 1축의 0.02%p CV 개선은 Batch 2에서 유지되지 않았고, 역수 예측은 정책 분리 검증부터 크게 악화됐습니다. **기존 19.39%를 최종 성능으로 유지합니다.** 각 실험의 구현과 셀별 예측값은 `src/day2_curve_dynamics_experiment.py`, `src/day2_curve_pca_experiment.py`, `src/day2_inverse_life_experiment.py`와 `results/day2/`에 기록했습니다. 모두 기존 Batch 2 결과를 본 뒤 수행한 사후 검토입니다.
 
 ## 배치별 오차
 
