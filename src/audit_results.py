@@ -168,6 +168,15 @@ def document_checks():
     day1 = (ROOT / 'DAY1-REPORT.md').read_text()
     day2 = (ROOT / 'DAY2-REPORT.md').read_text()
     readme = (ROOT / 'README.md').read_text()
+    required_readme_sections = [
+        '프로젝트 개요', '파일 구조', '환경 설정', 'EDA', 'Modeling',
+        '성능 결과', '오류 분석', 'ESS 도메인 해석', '참고문헌', '팀 구성',
+    ]
+    assert re.findall(r'^## (.+)$', readme, flags=re.M) == required_readme_sections
+    for heading in ('Cycle Life 분포', '열화 곡선과 knee point', 'ΔQ(V) 곡선과 파생변수',
+                    '충전 속도(C-rate)와 수명', '초기 신호의 상관관계와 중복',
+                    '피처 엔지니어링 전략', '모델 선택 및 근거', '데이터 분할과 학습 절차'):
+        assert f'### {heading}' in readme
     for filename, content in [('DAY1-REPORT.md', day1), ('DAY2-REPORT.md', day2)]:
         lines = content.splitlines()
         start = lines.index('## 목차')

@@ -1,65 +1,53 @@
 # ESS 배터리 수명 예측
 
-초기 100사이클의 측정값으로 LFP·흑연 배터리 **셀**의 총 사이클 수명을 예측했습니다. 가장 중요하게 본 신호는 10사이클과 100사이클 사이의 `ΔQ(V)` 변화입니다. 배치가 바뀌어도 이 신호가 수명과 같은 방향으로 연결되는지 확인하고, 그 결과를 모델 선택에 반영했습니다.
+초기 100사이클의 기록만으로 LFP·흑연 배터리 **셀**의 수명을 예측했습니다. 먼저 세 배치의 수명·용량 곡선·충전 조건을 비교하고, 초기 변화가 수명과 가장 일관되게 연결된 `ΔQ(V)`를 핵심 변수로 선택했습니다. 이 변수와 초기 방전 용량(`QD`), 내부저항(`IR`)을 사용한 모델의 Batch 2 오차는 **19.39% MAPE**였습니다. Batch 1 내부 검증보다 오차가 큰 이유도 셀별 예측 결과에서 확인했습니다.
 
-**핵심 결과:** 초기 내부저항(`IR`)을 추가한 로그 Ridge의 Batch 1 정책별 5분할 CV MAPE는 **7.10%**, hold-out은 **7.15%**, 필수 평가인 Batch 2는 **19.39%**입니다. 이전 2변수 모델의 Batch 2 **24.11%**보다 낮아졌지만 배치 이동 오차는 여전히 큽니다. [Day 2 분석](DAY2-REPORT.md)에 모델을 바꾼 근거와 검증 한계를 적었습니다.
-
-## 무엇을 예측했는가
+## 프로젝트 개요
 
 | 항목 | 내용 |
 |---|---|
-| 데이터셋 | Severson 외(2019)의 MIT-Stanford 배터리 데이터 |
-| 학습 | Batch 1 (`2017-05-12`), 수명 분석 41셀 |
-| 필수 평가 | Batch 2 (`2017-06-30`), 수명 분석 43셀 |
-| 추가 평가 | Batch 3 (`2018-04-12`), 수명 분석 40셀 |
-| 태스크 | 회귀: 초기 100사이클 → `cycle_life` 예측 |
-| 수명 기준 | 방전 용량이 정격의 80%에 도달하는 시점 |
+| 데이터셋 | MIT-Stanford Battery Dataset, Severson 외(2019)의 LFP·흑연 셀 |
+| 학습 데이터 | Batch 1 (`2017-05-12`), 분석 대상 41셀 |
+| 필수 평가 데이터 | Batch 2 (`2017-06-30`), 분석 대상 43셀 |
+| 추가 평가 데이터 | Batch 3 (`2018-04-12`), 분석 대상 40셀 |
+| 태스크 | **회귀**: 처음 100사이클로 `cycle_life` 예측 |
+| 목표값 | 방전 용량이 정격 용량의 80%에 도달할 때까지의 사이클 수 |
+| 평가지표 | MAPE: 실제 수명에 대한 예측 오차의 비율 |
 
-원본은 46·48·46셀입니다. [원논문 공개 코드](https://github.com/rdbraatz/data-driven-prediction-of-battery-cycle-life-before-capacity-degradation/blob/master/Load%20Data.ipynb)를 따라 Batch 1의 미종료 5셀을 제외하고, Batch 1 첫 5셀의 연속 측정 길이를 수명값에 반영했습니다. 이어 측정한 Batch 2의 5셀과 Batch 3의 노이즈 채널 6셀은 각 배치 평가에서 제외했습니다. 제외·보정 내역은 `results/all_cells.csv`와 `results/paper_screened_cells.csv`에 있습니다.
+장·단수명 분류보다 **몇 사이클에 80% 기준에 도달하는지**가 점검 시점을 판단하는 데 직접 연결된다고 보아 회귀를 선택했습니다. 같은 단수명 범주에 들어가는 150사이클과 499사이클도 운영상 같은 시점으로 취급하기 어렵습니다.
 
-이 프로젝트의 Batch 2는 **`2017-06-30` 원본 파일**입니다. 분석에 사용한 파일 이름과 다운로드 경로는 [data/README.md](data/README.md)에 고정했습니다.
+과제 예시의 Batch 2 날짜인 `2018-02-20`은 **이번 분석에 사용한 Batch 2 파일이 아닙니다**. 실제 입력 파일은 `2017-06-30_batchdata_updated_struct_errorcorrect.mat`입니다. [원본 파일과 처리 기준](data/README.md)에 세 배치의 파일명과 다운로드 주소를 기록했습니다.
 
-## 저장소 구성
+원본은 Batch 1·2·3에 각각 46·48·46셀입니다. 공개 전처리 기준에 따라 수명이 끝나지 않은 Batch 1의 5셀, Batch 1에서 이어 측정해 Batch 2에 중복된 5셀, Batch 3의 노이즈 채널 6셀을 각 분석 집단에서 제외했습니다. Batch 1 첫 5셀의 연속 측정 길이는 **수명 레이블에만** 더했습니다. 최종 분석 대상은 **41·43·40셀**이며, 수명 분포와 모델 평가에서 **셀 하나를 한 행**으로 계산했습니다.
+
+## 파일 구조
 
 ```text
-Mini PJT/
-├── assets/fonts/                   # PDF 한글 폰트와 라이선스
-├── data/README.md                  # 공식 원본 파일과 처리 기준
-├── DAY1-EDA.ipynb                  # 저장된 EDA 표·그림 열람
-├── DAY1-REPORT.md                 # Day 1 분석과 전략
-├── DAY2-REPORT.md                 # Day 2 평가와 해석
+├── data/
+│   └── README.md                  # 원자료 다운로드 주소·제외 기준
+├── DAY1-EDA.ipynb                 # 저장된 EDA 그림·표 열람
+├── DAY1-REPORT.md                # 배치별 EDA와 모델 전략
+├── DAY2-REPORT.md                # 모델 개발·오류 분석
 ├── src/
-│   ├── day1_eda.py                # 배치별 셀·사이클 추출
-│   ├── day1_compare.py            # 배치 비교·그림·셀이력 보정
-│   ├── day1_model_probe.py        # Day 1 사전 모델 점검
-│   ├── report_extra_figures.py    # 배치 내 ΔQ(V)·knee 비교 그림
-│   ├── day2_model.py              # 정책별 분할·CV·최종 평가
-│   ├── day2_model_compare.py      # 22개 후보 비교
-│   ├── day2_feature_ablation.py   # ΔQ·QD·Tavg 제거 실험
-│   ├── day2_refinement.py         # 초기 내부저항 추가 실험
-│   ├── day2_batch_calibration.py  # Batch 2 레이블 보정 실험
-│   ├── day2_curve_dynamics_experiment.py # 초기 곡선 구간별 변화 시험
-│   ├── day2_curve_pca_experiment.py      # 전체 곡선 형태 PCA 시험
-│   ├── day2_inverse_life_experiment.py   # 수명 역수 예측 시험
-│   ├── day2_alternative_summary.py       # 새 실험 성능 비교 그림
-│   ├── day2_visuals.py            # 배치 이동·오차 시각화
-│   ├── audit_results.py           # 원본·피처·분할·성능 재검증
-│   ├── reproduce.py               # 전체 분석·보고서 순서대로 재생성
-│   └── build_day1_pdf.py          # 두 보고서의 PDF 생성
+│   ├── day1_eda.py               # 원자료에서 셀·사이클·초기 변수 추출
+│   ├── day1_compare.py           # 세 배치 EDA와 그림 생성
+│   ├── day2_model_compare.py     # 후보 모델 비교
+│   ├── day2_model.py             # 정책별 분할·학습·평가
+│   ├── audit_results.py          # 원자료·예측·성능표 검증
+│   └── reproduce.py              # 분석과 보고서 재생성
 ├── results/
-│   ├── model_inputs/               # 배치별 모델 입력; 개발 단계에서 Batch 1만 로드
-│   ├── model_performance.csv       # 제출 형식 성능표
-│   └── day2/                      # 분할·셀별 예측·후보 비교·그림
-└── requirements.txt
+│   ├── figures/                  # EDA 그림
+│   ├── day2/                     # 분할, 후보 비교, 셀별 예측과 오류
+│   └── model_performance.csv      # 제출 형식 성능표
+├── requirements.txt
+└── README.md
 ```
 
-원본 `.mat` 파일은 Git에 포함하지 않습니다. 다운로드할 파일 이름과 출처는 [data/README.md](data/README.md)에 있습니다. 보고서 PDF는 [Day 1](DS-MINI-Design-울산_1반-박준형.pdf)과 [Day 2](DS-MINI-Design-울산_1반-박준형-DAY2.pdf)입니다.
+위 트리는 주요 진입점입니다. 피처 제거·추가 실험을 포함한 나머지 스크립트도 `src/`에 있습니다. 원본 `.mat` 파일은 용량 때문에 Git에 넣지 않았습니다.
 
-PDF의 한글 본문 폰트는 macOS에서 시스템 AppleGothic을 사용하고, 다른 환경에서는 저장소에 포함한 [NanumGothic Regular](https://github.com/google/fonts/tree/main/ofl/nanumgothic)을 사용합니다. 폰트 라이선스는 [OFL.txt](assets/fonts/OFL.txt)에 있습니다.
+## 환경 설정
 
-## 재현 방법
-
-Python 3.14에서 확인했습니다. 아래 명령은 프로젝트 루트에서 실행합니다. 원본 `.mat` 세 파일의 합계는 약 **7.7GB**이므로 다운로드 전 디스크 공간을 확인해야 합니다. 파일 이름과 링크는 [data/README.md](data/README.md)에 있습니다.
+Python 3.14에서 실행을 확인했습니다. 원본 파일로 EDA부터 다시 수행하려면 [data/README.md](data/README.md)의 세 `.mat` 파일을 `data/`에 내려받으세요. 원본 세 파일은 약 7.7GB입니다.
 
 ```bash
 git clone https://github.com/jun394647/ess-battery-cycle-life-mini-project.git
@@ -69,100 +57,146 @@ python3 -m venv .venv
 .venv/bin/python src/reproduce.py
 ```
 
-`reproduce.py`는 세 배치를 각각 별도 프로세스에서 추출한 다음 EDA, 후보 비교, 평가, 원자료 감사, PDF 생성 순서로 실행합니다. 원본 없이 Git에 포함된 셀 단위 결과에서 **모델과 PDF만** 재생성하려면 `.venv/bin/python src/reproduce.py --from-results`를 실행합니다. 이 모드는 원본 파일의 동일성이나 원본에서 피처를 추출한 과정을 검증하지 않습니다.
+원본이 없다면 Git에 포함된 셀 단위 결과로 모델 평가와 PDF를 재생성할 수 있습니다.
 
-빠르게 결과를 확인할 때는 [Day 1 노트북](DAY1-EDA.ipynb)을 열면 됩니다. 노트북은 `results/`에 저장된 표와 그림을 보여주며 원자료를 재계산하지 않습니다. 저장된 결과와 실제 원본의 대조 기록은 [감사 결과](results/audit_results.json)에 있습니다. 원본이 없으면 `.venv/bin/python src/audit_results.py --artifacts-only`로 CV 재학습, 셀별 예측과 문서·성능표의 일치 여부를 확인할 수 있습니다.
+```bash
+.venv/bin/python src/reproduce.py --from-results
+```
 
-## EDA에서 선택한 입력
+이 명령은 원본에서 피처를 다시 뽑지는 않습니다. 원본 대조 결과는 [감사 기록](results/audit_results.json)에, 상세한 실행 순서는 [Day 2 보고서](DAY2-REPORT.md)에 있습니다.
 
-Batch 1·2·3의 수명 중앙값은 **842·481·965사이클**입니다. Batch 2의 43셀 중 **33셀**이 500사이클 미만이고, Batch 3의 40셀 중 **19셀**이 1,000사이클 초과입니다. 두 구간 직선으로 근사한 방전 용량 곡선의 탐색적 knee 중앙값은 **580·381·766사이클**입니다. knee는 미래 기록이므로 입력에서 제외했습니다.
+## EDA
 
-같은 셀의 100사이클과 10사이클 `Qdlin(V)` 차이 곡선에서 `log10 var(ΔQ(V))`를 만들었습니다. 수명과의 Spearman 상관은 **-0.88·-0.65·-0.76**으로 세 배치에서 방향이 유지됐습니다. 이 변수를 가장 중요하게 보고, 초기 평균 `QD`를 보조 입력으로 선택했습니다. `Tavg`와 충전 정책 강도는 배치별 관계·변수 중복·제거 실험을 근거로 최종 입력에서 제외했습니다. 수명 구간과 정책별 해석은 [Day 1 보고서](DAY1-REPORT.md)에 적었습니다.
+### Cycle Life 분포
 
-## 모델 개발과 검증
+| 배치 | 평균 | 중앙값 | 수명 범위 | 500사이클 미만 | 1,000사이클 초과 |
+|---|---:|---:|---:|---:|---:|
+| Batch 1 (41셀) | 921 | 842 | 534–2,237 | 0셀 | 10셀 |
+| Batch 2 (43셀) | 473 | 481 | 148–713 | **33셀(77%)** | 0셀 |
+| Batch 3 (40셀) | 1,032 | 965 | 541–1,935 | 0셀 | **19셀(48%)** |
 
-Batch 1을 충전 정책별로 개발용 **31셀**과 hold-out **10셀**로 나눴고 같은 정책이 겹치지 않습니다. 개발용에서만 정책별 5분할 `GroupKFold`로 **22개 후보**를 비교했습니다. 후보 선택·변수 제거 단계는 `results/model_inputs/batch1.csv`만 열며, Batch 2·3 파일은 평가·사후 진단 단계에서 엽니다. 결측 대체와 표준화는 각 학습 폴드에서만 맞췄습니다. 분할은 `results/day2/batch1_split.csv`에 있습니다.
+![세 배치의 수명 분포](results/figures/compare_life.png)
 
-Day 1 사전 비교에는 Batch 1 전체 41셀이 사용됐습니다. 따라서 Day 2 hold-out은 **정책 분리 검증**이지만 처음부터 미사용한 셀은 아닙니다. Batch 2 역시 Day 1 EDA와 이전 2변수 모델 평가에서 노출됐습니다. 이 점을 점수의 해석 범위에 포함했습니다.
+**핵심 발견:** Batch 1의 최단 수명은 **534사이클**인데 필수 테스트인 Batch 2는 **33/43셀**이 500사이클 미만입니다. Batch 1만으로 학습한 회귀 모델은 짧은 수명 구간을 외삽해야 합니다. 그래서 전체 MAPE뿐 아니라 **짧은 수명 셀을 얼마나 길게 예측하는지** 따로 확인하기로 했습니다. Batch 2의 148·300·335사이클 셀은 통계적 이상값이지만 유효한 종료 기록이므로 임의로 빼지 않았습니다.
 
-**현재 제출 모델은 `ΔQ(V)` 로그 분산, 초기 평균 `QD`, 초기 평균 내부저항 `IR`을 쓰는 로그 타깃 Ridge(α=0.1)**입니다. 이전 2변수 모델보다 Batch 1 개발용 CV가 **7.59→7.10%**로 낮았습니다. 5개 폴드 중 3개에서 개선됐고, 정책별 분할을 4·5·6개로 바꾸어도 개선 방향이 유지됐습니다. `IR`의 단순 수명 상관은 약하지만 `ΔQ(V)`와 완전히 겹치지 않는 초기 측정값으로 보았습니다. 여러 조합을 탐색한 뒤 고른 결과라 이 작은 CV 차이를 확정적인 우위로 보지 않습니다. 단일 Ridge 회귀이며 앙상블은 아닙니다. 세부 비교는 [추가 변수 실험](results/day2/refinement_summary.csv)과 [후보 비교](results/day2/model_comparison/comparison_table.csv)에 있습니다.
+### 열화 곡선과 knee point
 
-이번 `IR` 추가도 기존 모델의 Batch 2 결과를 본 뒤 진행했습니다. 따라서 Batch 2에서 **24.11→19.39%**로 낮아진 수치는 **사후 개선 결과**입니다. 완전히 미접촉한 외부 검증 성능으로 해석하지 않습니다. 선택 이력과 다음 검증 절차는 [Day 2 보고서](DAY2-REPORT.md)에 기록했습니다.
+![세 배치의 방전 용량 곡선](results/figures/compare_qd.png)
 
-## 검증 성능
+셀별 `QD` 곡선은 초기에는 비슷하다가 뒤로 갈수록 감소 시점이 갈렸습니다. 21사이클 이동 중앙값과 두 구간 직선으로 탐색한 knee 중앙값은 Batch 1·2·3에서 **580·381·766사이클**이었습니다. 유효한 곡선에서는 knee 뒤쪽의 용량 감소 기울기가 더 가팔랐습니다.
+
+**핵심 발견:** 수명 차이는 열화가 **언제 가속되는지**와 연결돼 보입니다. 다만 knee는 미래 사이클을 보고 계산한 탐색적 경계입니다. 처음 100사이클로 예측하는 모델에 넣으면 미래 정보가 새므로 입력에서 제외했습니다. 배치별 곡선과 계산 한계는 [Day 1 분석](DAY1-REPORT.md)에 적었습니다.
+
+### ΔQ(V) 곡선과 파생변수
+
+초기 평균 `QD`와 수명의 Spearman 상관은 Batch 1·2·3에서 **+0.19·+0.30·+0.25**였습니다. 처음 용량만으로 수명을 구분하기 어려워, 같은 셀의 공통 전압점에서 **`Qdlin100(V) − Qdlin10(V)`**를 계산했습니다. 이 곡선의 분산에 상용로그를 취한 `delta_q_logvar = log10(var(ΔQ(V)))`가 제가 만든 핵심 파생변수입니다.
+
+![ΔQ(V) 로그 분산과 수명](results/figures/compare_delta_q.png)
+
+이 변수와 수명의 Spearman 상관은 **-0.88·-0.65·-0.76**입니다. 세 배치에서 모두 초기 곡선 변화가 큰 셀일수록 수명이 짧은 방향이었습니다. Batch 2의 원곡선에서는 일부 단수명 셀이 약 3.0V 부근에서 더 크게 내려갔지만 집단 간 곡선은 겹쳤습니다. Batch 1에는 500사이클 미만 셀이 없으므로, 같은 배치에서 절대 기준의 장·단수명 곡선을 직접 비교할 수는 없습니다. 대신 **배치별 수명 중앙값으로 나눈 짧은 절반과 긴 절반**을 비교했고, 세 배치 모두 짧은 절반의 로그 분산 중앙값이 더 높았습니다.
+
+![배치 안에서 비교한 ΔQ(V) 분산](results/figures/within_batch_delta_q.png)
+
+**핵심 발견:** `ΔQ(V)` 변화의 **방향**은 배치마다 유지돼 핵심 입력으로 택했습니다. 그러나 로그 분산의 배치별 중앙값 자체는 **-3.84·-3.52·-4.15**로 이동합니다. 한 배치에서 정한 숫자 기준을 다른 배치에 그대로 적용할 수 있다는 뜻은 아닙니다. 분산은 곡선의 모든 형태를 담지 못하므로 구간별 변화와 PCA 형태 변수도 나중에 시험했습니다.
+
+### 충전 속도(C-rate)와 수명
+
+![충전 정책 강도와 수명](results/figures/compare_policy_rate.png)
+
+Batch 1의 반복 정책을 보면 `3.6C(80%)-3.6C`는 **3셀 평균 2,083사이클**, `4.8C(80%)-4.8C`는 **2셀 평균 753사이클**입니다. 반면 후자의 Batch 2 평균은 **3셀 476사이클**이었습니다. Batch 2는 43셀에 정책이 41종류라 정책별 평균 대부분이 셀 하나의 값입니다. 두 단계의 C-rate, 전환 SOC, 배치 조건도 함께 달라집니다.
+
+처음에는 고속 충전이 수명을 줄인다고 생각했지만, 첫 구간 C-rate와 수명의 Spearman 상관은 **-0.49·+0.14·-0.16**으로 배치마다 방향이 같지 않았습니다. 초기 평균 충전 시간의 상관도 **+0.60·+0.04·+0.05**였습니다.
+
+**핵심 발견:** 충전 정책이 중요한 실험 조건이라는 점과 **이 자료에서 정책 숫자만으로 수명을 안정적으로 예측할 수 있는지**는 별도 문제였습니다. 제가 만든 정책 강도 대리변수는 Batch 1에서 `ΔQ(V)` 로그 분산과 Pearson 상관이 **0.96**으로 높았습니다. 따라서 정책표의 값보다 **셀에서 실제로 관측된 초기 곡선 변화**를 우선 입력으로 놓고, 정책 변수의 추가 이득은 모델 비교에서 확인했습니다. 이 비교만으로 C-rate의 인과 효과를 주장하지 않습니다.
+
+### 초기 신호의 상관관계와 중복
+
+![Batch 1 초기 신호의 Pearson 상관 히트맵](results/figures/batch1_feature_heatmap.png)
+
+| 초기 변수와 수명의 Spearman 상관 | Batch 1 | Batch 2 | Batch 3 |
+|---|---:|---:|---:|
+| `delta_q_logvar` | **-0.88** | **-0.65** | **-0.76** |
+| 초기 평균 `QD` | +0.19 | +0.30 | +0.25 |
+| 초기 평균 `IR` | +0.21 | +0.10 | +0.21 |
+| 초기 평균 `Tavg` | -0.39 | +0.09 | +0.02 |
+| 첫 구간 C-rate | -0.49 | +0.14 | -0.16 |
+
+온도는 배터리 열화에 중요하지만 이 자료의 초기 `Tavg`는 Batch 1 밖에서 수명과의 상관 방향이 유지되지 않았습니다. 히트맵의 **Pearson** 상관과 표의 **Spearman** 상관은 계산 방식이 다릅니다. 정책 강도와 `delta_q_logvar`의 높은 중복도 확인했습니다. 선택한 세 입력에는 분석 셀의 결측이 없었습니다.
+
+**핵심 발견:** 단순 상관이 가장 강한 `ΔQ(V)`를 중심으로 두되, 상관이 약한 `QD`와 `IR`도 **기존 입력을 알고 난 뒤 추가 예측력이 있는지** 모델에서 검증했습니다. EDA만으로 세 변수의 최종 조합을 확정하지 않았습니다.
+
+## Modeling
+
+### 피처 엔지니어링 전략
+
+| 변수 | 계산 시점과 뜻 | 선택 근거 |
+|---|---|---|
+| `delta_q_logvar` | 10회와 100회의 방전 용량 곡선 차이 분산에 `log10` | 세 배치에서 가장 일관된 수명 관계를 보인 핵심 변수 |
+| `early_mean_QD` | 1~100사이클 평균 방전 용량 | `ΔQ(V)`의 변화 폭과 다른 용량 수준 정보인지 제거 실험으로 확인 |
+| `early_mean_IR` | 1~100사이클 평균 내부저항 | 단순 상관은 약하지만 기존 두 변수와 겹치지 않는 초기 측정값 후보 |
+
+`QD`를 더하자 2변수 로그 Ridge의 Batch 1 개발용 CV MAPE가 `ΔQ(V)` 단독 **10.08% → 7.59%**로 낮아졌습니다. `IR`까지 더한 모델은 **7.10%**였습니다. 같은 규제 강도에서 `IR`을 추가할 때도 **7.59% → 7.30%**로 낮아져, 개선이 규제 강도 변경만의 결과는 아니었습니다.
+
+`Tavg`를 2변수 모델에 더하면 CV가 **7.59% → 8.07%**로 높아졌고, 정책 강도는 `ΔQ(V)`와 중복됐습니다. 미래 기록인 knee와 전체 수명 이후에만 알 수 있는 값은 입력에서 제외했습니다. 결측 대체와 표준화는 검증 데이터가 섞이지 않도록 **각 학습 폴드 안에서만** 맞췄습니다.
+
+### 모델 선택 및 근거
+
+- **후보 모델:** 중앙값 기준선, 일반·로그 Ridge, Elastic Net, 결정트리, Random Forest, Extra Trees, Gradient Boosting, SVR, KNN 등 **22개 설정**을 같은 Batch 1 개발용 정책별 CV로 비교했습니다.
+- **최종 모델:** `delta_q_logvar`, `early_mean_QD`, `early_mean_IR`을 입력으로 하는 **단일 로그 타깃 Ridge 회귀(α=0.1)**입니다. 여러 모델의 예측을 합친 앙상블은 아닙니다.
+- **선택 이유:** 셀이 41개로 적고 초기 변수끼리 중복됩니다. 복잡한 모델의 성능을 가정하기보다 규제된 회귀를 기준으로 비교했습니다. 중앙값 기준선은 CV **24.18%**, 일반 Ridge 3변수는 **12.36%**, Random Forest 3변수는 **12.11%**, 선택한 로그 Ridge는 **7.10%**였습니다. 수명이 양수이고 평가가 상대오차인 점도 로그 목표값을 시험한 근거입니다.
+
+`IR`을 추가한 뒤 기존 2변수 모델보다 Batch 1 CV는 **7.59% → 7.10%**, Batch 2는 **24.11% → 19.39%**로 낮아졌습니다. 다만 `IR` 후보는 **이전 Batch 2 성능을 본 뒤** 추가했습니다. 따라서 Batch 2 개선은 사후 결과이며 미접촉 테스트에서 확인된 개선으로 주장하지 않습니다. 추가 후보 중 `ΔQ(V)` 평균절댓값은 내부 CV **6.66%**였지만 분산과 Pearson 상관이 **0.95**여서 중복 위험이 컸습니다. CV 최솟값 하나로 최종 변수를 고르지 않은 이유입니다.
+
+곡선을 10→50회와 50→100회로 나눈 변수는 Batch 1 CV부터 나빠졌습니다. 곡선 형태 PCA 1축은 CV **7.08%**, Batch 2 **19.40%**로 현재 모델과 사실상 같았습니다. 수명의 역수 예측은 CV **6.18%**지만 정책 분리 hold-out **28.34%**, Batch 2 **32.63%**로 불안정했습니다. 계산과 전체 후보 결과는 [Day 2 보고서](DAY2-REPORT.md)와 `results/day2/`에 남겼습니다.
+
+### 데이터 분할과 학습 절차
+
+1. Batch 1 **41셀**을 충전 정책 단위로 개발용 **31셀**과 hold-out **10셀**로 나눴습니다. 두 집합에 같은 정책이 겹치지 않습니다.
+2. 개발용 31셀에서 정책별 `GroupKFold(5)`로 후보를 비교했습니다. 아래 표의 **Train (Batch 1 CV)**는 학습 셀의 오차가 아니라 **5개 검증 폴드의 평균 오차**입니다.
+3. 선택한 모델을 개발용으로 학습해 hold-out을 확인한 뒤, Batch 1 전체로 다시 학습해 Batch 2 전체를 평가했습니다. Batch 3은 추가 평가입니다.
+
+[분할표](results/day2/batch1_split.csv)와 [모델 코드](src/day2_model.py)에서 실제 셀 배정과 파이프라인을 확인할 수 있습니다. Day 1 사전 비교에는 Batch 1 전체가 쓰였으므로 hold-out도 완전한 미접촉 집합은 아닙니다. Batch 2의 분포와 앞선 모델 결과도 이미 본 상태에서 `IR`을 선택했습니다. 이 선택 이력을 성능 해석에 반영했습니다.
+
+## 성능 결과
 
 | 구분 | MAPE (%) | 비고 |
 |---|---:|---|
 | Train (Batch 1 CV) | **7.10** | 개발용 31셀, 정책별 5분할 평균 |
-| Valid (Batch 1 Hold-out) | **7.15** | 정책이 겹치지 않는 10셀 |
+| Valid (Batch 1 Hold-out) | **7.15** | 개발용과 정책이 겹치지 않는 10셀 |
 | Test (Batch 2) | **19.39** | Batch 1 전체 학습 후 43셀 평가 |
-| Gap (Train-Valid) | **+0.06%p** | Valid - Train |
-| Gap (Valid-Test) | **+12.24%p** | Batch 2 - Valid |
-| Gap (Target-Test) | **+10.29%p** | Batch 2 - 원논문 참고값 9.1% |
+| Gap (Train-Valid) | **+0.06%p** | Valid − Train, 내부 검증 차이 |
+| Gap (Valid-Test) | **+12.24%p** | Batch 2 − Valid, 배치 이동 시 오차 증가 |
+| Gap (Target-Test) | **+10.29%p** | Batch 2 − 논문 초록의 9.1% |
 | Test (Batch 3) | **10.99** | 추가 평가 40셀 |
-| Gap (Batch2-Batch3) | **-8.40%p** | Batch 3 - Batch 2 |
-| Gap (Target-Test, Batch 3) | **+1.89%p** | Batch 3 - 9.1% |
+| Gap (Batch2-Batch3) | **−8.40%p** | Batch 3 − Batch 2 |
+| Gap (Target-Test, Batch 3) | **+1.89%p** | Batch 3 − 9.1% |
 
-9.1%는 과제에서 비교 기준으로 제시한 **논문 초록의 대표 수치**입니다. 논문 표의 Primary test 전체 셀 MAPE는 Full 모델 **14.1%**, Discharge 모델 **13.0%**입니다. 논문은 Batch 1·2를 섞어 학습·시험으로 나눴고, 이 프로젝트는 Batch 1만 학습해 Batch 2 전체를 시험했습니다. 따라서 9.1%를 논문의 동일한 Batch 2 전체 셀 점수로 해석하지 않았습니다. 자세한 근거는 [추가 실험과 논문 비교](DAY2-REPORT.md)에, 제출 형식 수치는 [성능표](results/model_performance.csv)에 있습니다.
+Batch 2 오차는 내부 hold-out보다 **12.24%p** 높았습니다. 논문 초록의 **9.1%**보다 **10.29%p** 높지만, 두 수치를 같은 테스트 설계로 읽으면 안 됩니다. [원논문](https://web.mit.edu/braatzgroup/Severson_NatureEnergy_2019.pdf)의 Primary test 전체 셀 MAPE는 표 1에서 Full 모델 **14.1%**, Discharge 모델 **13.0%**입니다. 공개 분할은 Batch 1·2를 섞어 학습·시험으로 나누고, 이 과제는 **Batch 1만 학습 → Batch 2 전체 테스트**입니다. 과제 기준에 맞춘 성능표는 [`results/model_performance.csv`](results/model_performance.csv)에 있습니다.
 
-## 9.1% 목표를 다시 시험한 결과
+## 오류 분석
 
-Batch 1에서만 후보를 비교하고 이후 Batch 2를 사후 평가했습니다. 처음 100사이클의 용량·저항 변화를 추가하고, 논문의 방전 곡선 변수도 구현했습니다. **내부 CV가 낮아진 후보도 Batch 2에서는 현재 모델보다 오차가 컸습니다.**
+![Batch 2의 초기 신호별 실제 수명과 예측 수명](results/day2/figures/batch2_dq_calibration.png)
 
-| 모델 또는 변경 | Batch 1 CV | Batch 1 hold-out | Batch 2 |
-|---|---:|---:|---:|
-| 현재 3변수 로그 Ridge | **7.10%** | **7.15%** | **19.39%** |
-| 초기 평균 `QD`를 2번째 사이클 `QD`로 교체 | 6.46% | 8.23% | 23.58% |
-| 논문형 방전 변수 6개, 이상 용량값 제외 | 5.75% | 10.46% | 23.11% |
-| 짧은 수명 셀에 학습 가중치 추가 | 6.97% | 7.34% | 19.81% |
-| 새 배치의 정답 없이 입력 분포로 가중치 조정 | 6.94% | 6.77% | 19.91% |
+Batch 2의 실제 수명 중앙값은 **481사이클**, 예측 중앙값은 **570사이클**입니다. **43셀 중 37셀**을 실제보다 길게 예측했고, 500사이클 미만 **33셀**은 평균 **78사이클 과대예측**했습니다. 가장 큰 Batch 2 절대오차인 `batch2_020`은 실제 **502사이클**을 **758사이클**로 예측해 **+256사이클** 틀렸습니다. 반대로 Batch 3에서는 1,000사이클 초과 **19셀**을 평균 **177사이클 과소예측**했습니다.
 
-논문의 공개 분할처럼 Batch 1·2를 섞어 현재 모델을 다시 학습·시험하면 MAPE는 **11.16%**였습니다. 이는 분할의 영향을 살펴본 사후 진단이며 과제 필수 성능을 대체하지 않습니다. 실험별 변수 정의, 측정값 이상치, 모델 유지 판단은 [Day 2 보고서](DAY2-REPORT.md)에 적었습니다. 추가 실험 코드는 `src/day2_trajectory_experiment.py`, `src/day2_paper_feature_experiment.py`, `src/day2_shortlife_experiment.py`, `src/day2_covariate_shift_experiment.py`, `src/day2_gap_alignment_experiment.py`, `src/day2_paper_split_diagnostic.py`에 있습니다. 원자료가 필요한 실험도 있으므로 기본 `reproduce.py --from-results`에는 포함하지 않았습니다.
+제가 먼저 의심한 원인은 **학습·평가 배치의 수명 범위 차이**입니다. Batch 1에는 534사이클보다 짧은 학습 셀이 없는데 Batch 2의 77%는 500사이클 미만입니다. 초기 `ΔQ(V)`의 배치별 중앙값도 이동합니다. 이는 과대예측과 일치하는 관찰이지만, 충전 조건·실험 시기·측정 시작 조건 중 무엇이 원인인지 이 자료만으로 분리할 수 없습니다.
 
-### 곡선 정보와 목표값을 바꾼 추가 시험
+**개선 방향:** 원곡선의 전압 격자와 측정 시작 조건, 수명 레이블을 먼저 대조하겠습니다. 이후 500사이클 미만 셀이 포함된 새 학습 집단을 확보하고, 새로운 실험 시기의 배치를 평가용으로 **사전에 고정**해 다시 시험하겠습니다. 짧은 수명의 과대예측이 실제 운영에 더 위험하다면 그 구간의 편향도 모델 선택 기준에 넣겠습니다. Batch 2 일부 레이블로 보정해 오차가 줄어든 실험은 있지만 정답을 추가 사용한 사후 분석이므로 **19.39%를 대신하는 테스트 성능으로 쓰지 않았습니다**.
 
-100회−10회 곡선의 분산이 놓친 정보를 찾기 위해 10→50회와 50→100회 변화를 분리하고, 곡선 형태를 PCA로 압축했습니다. 또 `1/cycle_life`를 열화 속도의 대리 목표값으로 예측했습니다. 정책별 Batch 1 CV와 hold-out을 먼저 비교한 결과입니다.
+[셀별 예측값](results/day2/cell_predictions.csv), [큰 오차 셀](results/day2/worst_errors.csv), [수명 구간별 오류](results/day2/error_group_summary.csv)에서 계산 근거를 확인할 수 있습니다.
 
-| 모델 | Batch 1 CV | Batch 1 hold-out | Batch 2 |
-|---|---:|---:|---:|
-| 현재 3변수 로그 Ridge | **7.10%** | **7.15%** | **19.39%** |
-| 곡선 형태 PCA 1축 추가 | 7.08% | 7.07% | 19.40% |
-| 곡선 형태 PCA 2축 추가 | 7.07% | 7.45% | 24.24% |
-| 수명 역수 예측 | 6.18% | 28.34% | 32.63% |
+## ESS 도메인 해석
 
-구간별 곡선 변수를 추가한 후보는 Batch 1 CV부터 모두 기존 모델보다 나빴습니다. PCA 1축의 0.02%p CV 개선은 Batch 2에서 유지되지 않았고, 역수 예측은 정책 분리 검증부터 크게 악화됐습니다. **기존 19.39%를 최종 성능으로 유지합니다.** 각 실험의 구현과 셀별 예측값은 `src/day2_curve_dynamics_experiment.py`, `src/day2_curve_pca_experiment.py`, `src/day2_inverse_life_experiment.py`와 `results/day2/`에 기록했습니다. 모두 기존 Batch 2 결과를 본 뒤 수행한 사후 검토입니다.
+이 모델이 실제 BESS에 적용된다면, 초기 곡선 변화가 큰 셀을 **추가 검사와 추적 관찰의 우선 대상으로 고르는 데** 참고할 수 있겠습니다. 하지만 Batch 2에서 짧은 수명을 길게 예측한 경향이 남아 있으므로 현재 점수로 **팩 교체 시점이나 보증 기간을 결정하기는 어렵습니다**. 제가 중요하게 보는 것은 전체 MAPE를 조금 낮추는 것보다, 위험한 셀의 점검을 늦추는 예측이 얼마나 남는지입니다.
 
-## 배치별 오차
+이번 데이터는 통제된 조건에서 시험한 **셀**의 기록입니다. 현장 ESS에는 셀 간 편차, 팩 온도, BMS 제어, 실제 운전 이력이 더해집니다. 따라서 팩에 쓰려면 같은 측정 정의의 초기 기록과 현장 운영 데이터를 연결하고, 새 시기의 셀·팩에서 오차와 과대예측률을 함께 검증해야 합니다. Batch 2의 오차가 보여준 핵심은 **초기 열화 신호를 찾는 일과 다른 배치의 절대 수명을 맞히는 일은 각각 확인해야 한다**는 점입니다.
 
-Batch 2의 실제 수명 중앙값은 **481사이클**, 예측 중앙값은 **570사이클**입니다. 43셀 중 37셀을 길게 예측했고, 500사이클 미만 33셀의 평균 편향은 **+78사이클**입니다. Batch 3에서는 1,000사이클 초과 19셀을 평균 **177사이클 짧게** 예측했습니다. 이전 모델보다 오차는 줄었지만 방향은 같으므로 수명 구간별 편향을 함께 봅니다.
+## 참고문헌
 
-그림은 [배치별 신호와 수명](results/day2/figures/feature_target_shift.png), [Batch 2 신호별 실제·예측](results/day2/figures/batch2_dq_calibration.png), [수명 구간별 잔차](results/day2/figures/error_by_life_band.png), [후보 모델의 배치 이동](results/day2/figures/candidate_transfer.png)에 있습니다. 셀별 예측은 `results/day2/cell_predictions.csv`, 오차가 큰 셀은 `results/day2/worst_errors.csv`에서 확인할 수 있습니다.
+- Severson, K. A. 외(2019). [Data-driven prediction of battery cycle life before capacity degradation](https://doi.org/10.1038/s41560-019-0356-8). *Nature Energy*, 4, 383–391.
+- [MIT-Stanford 원자료](https://data.matr.io/1/projects/5c48dd2bc625d700019f3204) 및 [공개 전처리 코드](https://github.com/rdbraatz/data-driven-prediction-of-battery-cycle-life-before-capacity-degradation).
+- 상세 EDA·모델 판단과 그래프: [Day 1 보고서](DAY1-REPORT.md), [Day 2 보고서](DAY2-REPORT.md).
 
-## ESS 운영에서의 해석
+## 팀 구성
 
-초기 곡선 변화는 같은 측정 조건에서 추가 관찰이 필요한 셀을 찾는 신호로 사용할 가능성이 있습니다. 하지만 짧은 수명을 평균 78사이클 길게 보는 모델을 ESS 교체 시점 결정에 바로 쓰면 늦은 대응으로 이어질 수 있습니다. 현장에는 팩의 온도·셀 편차·운전 이력·BMS 측정값이 더 필요합니다.
-
-Batch 2의 일부 수명 레이블을 활용한 별도 보정 실험에서는 정책이 겹치지 않는 평가 셀의 평균 MAPE가 무보정 **19.25%**에서 중앙 비율 보정 **10.90%**로 줄었습니다. 매회 13~15개의 Batch 2 레이블을 사용한 **사후 실험**이므로 필수 테스트 성능으로 대체하지 않았습니다. Batch 2 전체 보정값을 Batch 3에 옮기면 MAPE가 **10.99→20.65%**로 악화됐습니다. 자세한 판단은 [Day 2 보고서](DAY2-REPORT.md)에 적었습니다.
-
-## 평가 기준과 산출물
-
-| 평가 항목 | 확인 위치 |
-|---|---|
-| Day 1 EDA: 분포·통계·피처 생성 | [Day 1 보고서의 EDA](DAY1-REPORT.md), `results/batch_summary.csv`, `results/feature_correlations.csv` |
-| EDA에서 전략으로 이어지는 근거 | [Day 1 변수 선정과 모델 전략](DAY1-REPORT.md), `results/day1_probe_summary.csv` |
-| 모델과 목표값 선택 논리 | [Day 1 모델 전략](DAY1-REPORT.md), [Day 2 후보 선정](DAY2-REPORT.md) |
-| 전략의 코드 반영 | `src/day1_compare.py`, `src/day2_model.py`, `results/day2/protocol.json` |
-| 분할·전처리·파이프라인 | `results/day2/batch1_split.csv`, `src/day2_model.py`, [원본 대조 결과](results/audit_results.json) |
-| 성능 형식·논문 Gap·오류 분석 | [제출 형식 성능표](results/model_performance.csv), [Day 2 성능·오차 분석](DAY2-REPORT.md) |
-| ESS 관점 해석과 한계 | [Day 2 ESS 도메인 해석과 제 생각](DAY2-REPORT.md) |
-
-평가 항목에 필요한 분석과 설명을 모두 담았는지 위 위치에서 확인할 수 있습니다. `results/audit_results.json`은 원본 파일의 셀 수·수명 보정·초기 피처·정책 분할·셀별 예측·성능표를 원자료와 대조한 결과입니다. 과제의 참고 성능 9.1%는 달성하지 못했고, Batch 2의 배치 이동 오차와 사후 모델 수정의 한계를 명시했습니다.
-
-## 자료 출처
-
-- [Severson 외(2019), *Data-driven prediction of battery cycle life before capacity degradation*](https://doi.org/10.1038/s41560-019-0356-8), *Nature Energy* 4, 383-391.
-- [MIT-Stanford 원자료](https://data.matr.io/1/projects/5c48dd2bc625d700019f3204)와 [공개 전처리 코드](https://github.com/rdbraatz/data-driven-prediction-of-battery-cycle-life-before-capacity-degradation).
-
-## 작성
-
-박준형(U015): 데이터 확인, EDA, 피처 설계, 모델 개발, Batch 2·3 평가와 보고서 작성.
+- **박준형(U015)**: 원자료 확인, 세 배치 EDA, 변수 설계, 모델 비교·개발, Batch 2·3 평가, 오류 분석과 보고서 작성.
