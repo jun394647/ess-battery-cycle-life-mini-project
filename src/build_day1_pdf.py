@@ -19,7 +19,7 @@ DAY=parser.parse_args().day
 SOURCE=ROOT/f'DAY{DAY}-REPORT.md'
 DEST=ROOT/(f'DS-MINI-Design-울산_1반-박준형-DAY2.pdf' if DAY==2 else 'DS-MINI-Design-울산_1반-박준형.pdf')
 system_font=Path('/System/Library/Fonts/Supplemental/AppleGothic.ttf')
-body_font=system_font if system_font.exists() else ROOT/'assets/fonts/NanumGothic-Bold.ttf'
+body_font=system_font if system_font.exists() else ROOT/'assets/fonts/NanumGothic-Regular.ttf'
 pdfmetrics.registerFont(TTFont('AppleGothic',str(body_font)))
 pdfmetrics.registerFontFamily('AppleGothic',normal='AppleGothic',bold='AppleGothic',italic='AppleGothic',boldItalic='AppleGothic')
 pdfmetrics.registerFont(TTFont('NanumGothicBold',str(ROOT/'assets/fonts/NanumGothic-Bold.ttf')))

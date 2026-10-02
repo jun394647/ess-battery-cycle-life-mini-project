@@ -1,4 +1,5 @@
 {
+  "mode": "full",
   "raw_and_feature_checks": {
     "batch1": {
       "raw_cells": 46,
@@ -39,6 +40,7 @@
     "development_cells": 31,
     "holdout_cells": 10,
     "model": "log_ridge_dq_qd",
+    "cv_folds_refit": 5,
     "batch2_mape_pct": 24.11475264778205
   },
   "document_checks": {

@@ -1,6 +1,8 @@
 # ESS 배터리 수명 예측
 
-초기 100사이클의 측정값으로 LFP·흑연 배터리 **셀**의 총 사이클 수명을 예측했습니다. ESS의 점검·교체 계획에 참고할 초기 신호를 찾는 것이 목적입니다. 단일 셀 실험의 수명값을 ESS 팩의 교체 시점으로 바로 쓰지 않습니다.
+초기 100사이클의 측정값으로 LFP·흑연 배터리 **셀**의 총 사이클 수명을 예측했습니다. 가장 중요하게 본 신호는 10사이클과 100사이클 사이의 `ΔQ(V)` 변화입니다. 배치가 바뀌어도 이 신호가 수명과 같은 방향으로 연결되는지 확인하고, 그 결과를 모델 선택에 반영했습니다.
+
+**핵심 결과:** Batch 1의 충전 정책별 5분할 CV MAPE는 **7.59%**, Batch 1 hold-out은 **7.82%**, 필수 평가인 Batch 2는 **24.11%**입니다. Batch 2에서 오차가 크게 늘어난 점을 주요 결과로 해석했습니다. [Day 2 분석](DAY2-REPORT.md)에 원인 가설과 개선 방향을 정리했습니다.
 
 ## 프로젝트 개요
 
@@ -21,8 +23,9 @@
 
 ```text
 Mini PJT/
+├── assets/fonts/                   # PDF 한글 폰트와 라이선스
 ├── data/README.md                  # 공식 원본 파일과 처리 기준
-├── DAY1-EDA.ipynb                  # Day 1 EDA 확인
+├── DAY1-EDA.ipynb                  # 저장된 EDA 표·그림 열람
 ├── DAY1-REPORT.md                 # Day 1 분석과 전략
 ├── DAY2-REPORT.md                 # Day 2 평가와 해석
 ├── src/
@@ -36,6 +39,7 @@ Mini PJT/
 │   ├── day2_batch_calibration.py  # Batch 2 레이블 보정 실험
 │   ├── day2_visuals.py            # 배치 이동·오차 시각화
 │   ├── audit_results.py           # 원본·피처·분할·성능 재검증
+│   ├── reproduce.py               # 전체 분석·보고서 순서대로 재생성
 │   └── build_day1_pdf.py          # 두 보고서의 PDF 생성
 ├── results/
 │   ├── model_performance.csv       # 제출 형식 성능표
@@ -45,32 +49,23 @@ Mini PJT/
 
 원본 `.mat` 파일은 Git에 포함하지 않습니다. 다운로드할 파일 이름과 출처는 [data/README.md](data/README.md)에 있습니다. 보고서 PDF는 [Day 1](DS-MINI-Design-울산_1반-박준형.pdf)과 [Day 2](DS-MINI-Design-울산_1반-박준형-DAY2.pdf)입니다.
 
-## 환경 설정과 재현
+PDF의 한글 본문 폰트는 macOS에서 시스템 AppleGothic을 사용하고, 다른 환경에서는 저장소에 포함한 [NanumGothic Regular](https://github.com/google/fonts/tree/main/ofl/nanumgothic)을 사용합니다. 폰트 라이선스는 [OFL.txt](assets/fonts/OFL.txt)에 있습니다.
 
-Python 3.14에서 확인했습니다. 세 원본 파일을 `data/`에 놓은 뒤 프로젝트 루트에서 실행합니다. 각 `.mat` 파일은 메모리 사용을 고려해 별도 프로세스로 추출합니다.
+## 실행 방법
+
+Python 3.14에서 확인했습니다. 아래 명령은 프로젝트 루트에서 실행합니다. 원본 `.mat` 세 파일의 합계는 약 **7.7GB**이므로 다운로드 전 디스크 공간을 확인해야 합니다. 파일 이름과 링크는 [data/README.md](data/README.md)에 있습니다.
 
 ```bash
 git clone https://github.com/jun394647/ess-battery-cycle-life-mini-project.git
 cd ess-battery-cycle-life-mini-project
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
-.venv/bin/python src/day1_eda.py batch1
-.venv/bin/python src/day1_eda.py batch2
-.venv/bin/python src/day1_eda.py batch3
-.venv/bin/python src/day1_compare.py
-.venv/bin/python src/report_extra_figures.py
-.venv/bin/python src/day1_model_probe.py
-.venv/bin/python src/day2_model_compare.py --stage screen
-.venv/bin/python src/day2_feature_ablation.py
-.venv/bin/python src/day2_model.py --stage select
-.venv/bin/python src/day2_model.py --stage evaluate --model log_ridge_dq_qd
-.venv/bin/python src/day2_model_compare.py --stage diagnose
-.venv/bin/python src/day2_batch_calibration.py
-.venv/bin/python src/day2_visuals.py
-.venv/bin/python src/audit_results.py
-.venv/bin/python src/build_day1_pdf.py
-.venv/bin/python src/build_day1_pdf.py --day 2
+.venv/bin/python src/reproduce.py
 ```
+
+`reproduce.py`는 세 배치를 각각 별도 프로세스에서 추출한 다음 EDA, 후보 비교, 평가, 원자료 감사, PDF 생성 순서로 실행합니다. 원본 없이 Git에 포함된 셀 단위 결과에서 **모델과 PDF만** 재생성하려면 `.venv/bin/python src/reproduce.py --from-results`를 실행합니다. 이 모드는 원본 파일의 동일성이나 원본에서 피처를 추출한 과정을 검증하지 않습니다.
+
+빠르게 결과를 확인할 때는 [Day 1 노트북](DAY1-EDA.ipynb)을 열면 됩니다. 노트북은 `results/`에 저장된 표와 그림을 보여주며 원자료를 재계산하지 않습니다. 저장된 결과와 실제 원본의 대조 기록은 [감사 결과](results/audit_results.json)에 있습니다. 원본이 없으면 `.venv/bin/python src/audit_results.py --artifacts-only`로 CV 재학습, 셀별 예측과 문서·성능표의 일치 여부를 확인할 수 있습니다.
 
 ## EDA와 피처 엔지니어링
 
@@ -84,7 +79,7 @@ Batch 1을 충전 정책별로 개발용 **31셀**과 hold-out **10셀**로 나�
 
 **최종 모델은 `ΔQ(V)` 로그 분산과 초기 평균 `QD`를 쓰는 2변수 로그 타깃 Ridge**입니다. Batch 1 개발용 CV에서 7.59%로 3변수 모델의 8.07%보다 낮았고, `Tavg`의 배치별 수명 상관이 불안정했습니다. 이 모델은 하나의 Ridge 회귀이며 앙상블이 아닙니다. 후보별 사후 비교는 `results/day2/model_comparison/comparison_table.csv`에 있습니다.
 
-2변수 제거 실험은 초기 3변수 모델의 Batch 2 결과를 본 뒤 추가했습니다. 직접 선택 기준은 Batch 1 개발용 CV였지만, 현재 Batch 2 점수는 **완전히 미접촉한 외부 검증**으로 해석하지 않습니다.
+2변수 제거 실험은 초기 3변수 모델의 Batch 2 결과를 본 뒤 추가했습니다. 직접 선택 기준은 Batch 1 개발용 CV였지만, 현재 Batch 2 점수는 **완전히 미접촉한 외부 검증**으로 해석하지 않습니다. 이 이력까지 포함해 후보 비교와 최종 선택 과정을 [Day 2 보고서](DAY2-REPORT.md)에 기록했습니다.
 
 ## 성능 결과
 
