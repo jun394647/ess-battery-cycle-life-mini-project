@@ -40,6 +40,8 @@ def raw_checks(all_cells, screened):
                 raw_life = float(f[b['cycle_life'][i, 0]][()].reshape(-1)[0])
                 table_life = raw.loc[cell_id, 'cycle_life']
                 assert (np.isnan(raw_life) and np.isnan(table_life)) or np.isclose(raw_life + (CONTINUATION_LENGTHS.get(i, 0) if batch == 'batch1' else 0), table_life)
+                raw_policy = ''.join(chr(code) for code in f[b['policy_readable'][i, 0]][()].reshape(-1))
+                assert raw.loc[cell_id, 'policy'] == raw_policy
                 assert bool(raw.loc[cell_id, 'reference_exclusion']) == (i in SCREEN_EXCLUSIONS[batch])
                 if i in SCREEN_EXCLUSIONS[batch]:
                     assert cell_id not in clean.index
@@ -73,6 +75,10 @@ def raw_checks(all_cells, screened):
 
 
 def model_checks(screened):
+    for batch in ('batch1', 'batch2', 'batch3'):
+        expected = screened[screened.batch == batch].reset_index(drop=True)
+        actual = pd.read_csv(RESULTS / 'model_inputs' / f'{batch}.csv')
+        pd.testing.assert_frame_equal(actual, expected, check_exact=False, rtol=1e-12, atol=1e-12)
     split = pd.read_csv(RESULTS / 'day2/batch1_split.csv')
     assert set(split.cell_id) == set(screened[screened.batch == 'batch1'].cell_id)
     dev = split[split.split == 'development']

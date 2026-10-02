@@ -137,7 +137,11 @@ while i<len(lines):
                 ('GRID',(0,0),(-1,-1),.3,colors.HexColor('#d8e0e5')),
                 ('VALIGN',(0,0),(-1,-1),'TOP'),('LEFTPADDING',(0,0),(-1,-1),5),
                 ('RIGHTPADDING',(0,0),(-1,-1),5),('TOPPADDING',(0,0),(-1,-1),5),('BOTTOMPADDING',(0,0),(-1,-1),5)]))
-            story.extend([tbl,Spacer(1,9)])
+            table_block=[tbl,Spacer(1,9)]
+            if DAY==2 and len(rows)<=10:
+                story.append(KeepTogether(table_block))
+            else:
+                story.extend(table_block)
         continue
     if line.startswith('- '):
         story.append(Paragraph('• '+inline(line[2:]),styles['KBody']));i+=1;continue

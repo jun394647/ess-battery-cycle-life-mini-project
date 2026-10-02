@@ -39,6 +39,10 @@ cell['reference_exclusion'] = cell.apply(
 cell.to_csv(OUT / 'all_cells.csv', index=False)
 analysis = cell.loc[~cell.reference_exclusion].copy()
 analysis.to_csv(OUT / 'paper_screened_cells.csv', index=False)
+model_inputs = OUT / 'model_inputs'
+model_inputs.mkdir(exist_ok=True)
+for batch_name in BATCHES:
+    analysis.loc[analysis.batch == batch_name].to_csv(model_inputs / f'{batch_name}.csv', index=False)
 
 summary = analysis.groupby('batch').agg(
     cells=('cell_id', 'size'), labeled=('cycle_life', 'count'), mean_life=('cycle_life', 'mean'),

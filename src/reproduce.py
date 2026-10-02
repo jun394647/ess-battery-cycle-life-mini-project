@@ -30,7 +30,8 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.from_results:
-        for name in ('all_cells.csv', 'paper_screened_cells.csv', 'batch_summary.csv'):
+        for name in ('all_cells.csv', 'paper_screened_cells.csv', 'batch_summary.csv',
+                     'model_inputs/batch1.csv', 'model_inputs/batch2.csv', 'model_inputs/batch3.csv'):
             if not (RESULTS / name).is_file():
                 parser.error(f'Missing results/{name}; run from the repository root with committed results')
     else:

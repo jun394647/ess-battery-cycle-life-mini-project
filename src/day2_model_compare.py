@@ -143,7 +143,7 @@ def main():
     parser.add_argument('--stage', choices=['screen', 'diagnose'], required=True)
     args = parser.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
-    batches = load_batches()
+    batches = load_batches(*(('batch1',) if args.stage == 'screen' else ('batch1', 'batch2', 'batch3')))
     dev, hold = split_batch1(batches['batch1'])
     if args.stage == 'screen':
         summary = screen(dev)

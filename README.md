@@ -42,6 +42,7 @@ Mini PJT/
 │   ├── reproduce.py               # 전체 분석·보고서 순서대로 재생성
 │   └── build_day1_pdf.py          # 두 보고서의 PDF 생성
 ├── results/
+│   ├── model_inputs/               # 배치별 모델 입력; 개발 단계에서 Batch 1만 로드
 │   ├── model_performance.csv       # 제출 형식 성능표
 │   └── day2/                      # 분할·셀별 예측·후보 비교·그림
 └── requirements.txt
@@ -75,7 +76,9 @@ Batch 1·2·3의 수명 중앙값은 **842·481·965사이클**입니다. Batch 
 
 ## Modeling
 
-Batch 1을 충전 정책별로 개발용 **31셀**과 hold-out **10셀**로 나눴고 같은 정책이 겹치지 않습니다. 개발용에서만 정책별 5분할 `GroupKFold`로 21개 설정을 비교했습니다. 결측 대체와 표준화는 각 학습 폴드에서만 맞췄습니다. 분할은 `results/day2/batch1_split.csv`에 있습니다.
+Batch 1을 충전 정책별로 개발용 **31셀**과 hold-out **10셀**로 나눴고 같은 정책이 겹치지 않습니다. 개발용에서만 정책별 5분할 `GroupKFold`로 21개 설정을 비교했습니다. 후보 선택·변수 제거 단계는 `results/model_inputs/batch1.csv`만 열며, Batch 2·3 파일은 평가·사후 진단 단계에서 엽니다. 결측 대체와 표준화는 각 학습 폴드에서만 맞췄습니다. 분할은 `results/day2/batch1_split.csv`에 있습니다.
+
+Day 1 사전 비교에는 Batch 1 전체 41셀이 사용됐습니다. 따라서 Day 2 hold-out은 **정책 분리 검증**이지만 처음부터 미사용한 셀은 아닙니다. Batch 2 역시 Day 1 EDA와 이전 3변수 모델 평가에서 노출됐습니다. 이 점을 점수의 해석 범위에 포함했습니다.
 
 **최종 모델은 `ΔQ(V)` 로그 분산과 초기 평균 `QD`를 쓰는 2변수 로그 타깃 Ridge**입니다. Batch 1 개발용 CV에서 7.59%로 3변수 모델의 8.07%보다 낮았고, `Tavg`의 배치별 수명 상관이 불안정했습니다. 이 모델은 하나의 Ridge 회귀이며 앙상블이 아닙니다. 후보별 사후 비교는 `results/day2/model_comparison/comparison_table.csv`에 있습니다.
 

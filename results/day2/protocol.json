@@ -15,5 +15,9 @@
     "test_minus_paper_9.1_pp": 15.014752647782052,
     "batch3_minus_batch2_pp": -12.151340726937146,
     "batch3_minus_paper_9.1_pp": 2.8634119208449054
-  }
+  },
+  "interpretation_limits": [
+    "Day 1 exploratory model comparison used all Batch 1 cells before the Day 2 hold-out was fixed.",
+    "Batch 2 labels were seen in Day 1 EDA and an earlier three-feature model evaluation."
+  ]
 }

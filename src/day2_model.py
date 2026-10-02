@@ -22,7 +22,7 @@ from sklearn.compose import TransformedTargetRegressor
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'results' / 'day2'
-DATA = ROOT / 'results' / 'paper_screened_cells.csv'
+MODEL_INPUTS = ROOT / 'results' / 'model_inputs'
 SEED = 42
 CORE = ['delta_q_logvar', 'early_mean_QD', 'early_mean_Tavg']
 LEAN = ['delta_q_logvar', 'early_mean_QD']
@@ -52,12 +52,18 @@ def candidates():
     }
 
 
-def load_batches():
-    df = pd.read_csv(DATA)
-    batches = {name: df[(df.batch == name) & df.cycle_life.notna()].copy().reset_index(drop=True)
-               for name in ('batch1', 'batch2', 'batch3')}
-    assert tuple(len(batches[k]) for k in batches) == (41, 43, 40)
-    assert not batches['batch1'].cell_id.isin(batches['batch2'].cell_id).any()
+def load_batches(*names):
+    """Open only requested batch files; selection cannot read test labels."""
+    names = names or ('batch1', 'batch2', 'batch3')
+    if not set(names) <= {'batch1', 'batch2', 'batch3'}:
+        raise ValueError(f'Unknown batch names: {names}')
+    batches = {name: pd.read_csv(MODEL_INPUTS / f'{name}.csv').dropna(subset=['cycle_life']).reset_index(drop=True)
+               for name in names}
+    expected = {'batch1': 41, 'batch2': 43, 'batch3': 40}
+    for name, batch in batches.items():
+        assert len(batch) == expected[name]
+        assert (batch.batch == name).all()
+    assert len(set().union(*(set(batch.cell_id) for batch in batches.values()))) == sum(map(len, batches.values()))
     return batches
 
 
@@ -166,7 +172,11 @@ def evaluate(model_name, dev, hold, batch1, batch2, batch3, summary):
     info = {'chosen_model': model_name, 'features': features, 'seed': SEED,
             'split': 'GroupShuffleSplit by charging policy, test_size=0.2',
             'cv': 'GroupKFold(5) on development cells only', 'n_development': len(dev),
-            'n_holdout': len(hold), 'gaps': gap}
+            'n_holdout': len(hold), 'gaps': gap,
+            'interpretation_limits': [
+                'Day 1 exploratory model comparison used all Batch 1 cells before the Day 2 hold-out was fixed.',
+                'Batch 2 labels were seen in Day 1 EDA and an earlier three-feature model evaluation.'
+            ]}
     (OUT / 'protocol.json').write_text(json.dumps(info, ensure_ascii=False, indent=2))
 
     fig, axes = plt.subplots(1, 2, figsize=(10, 4.5))
@@ -193,7 +203,7 @@ def main():
     parser.add_argument('--model', help='Frozen model name chosen from development CV')
     args = parser.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
-    batches = load_batches()
+    batches = load_batches(*(('batch1',) if args.stage == 'select' else ('batch1', 'batch2', 'batch3')))
     dev, hold = split_batch1(batches['batch1'])
     summary = select(dev)
     print(f'Batch 1 development={len(dev)}, hold-out={len(hold)}; policy overlap=0')

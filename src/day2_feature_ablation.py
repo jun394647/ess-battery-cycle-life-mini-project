@@ -22,7 +22,7 @@ FEATURE_SETS = {
 
 
 def main():
-    batch1 = load_batches()['batch1']
+    batch1 = load_batches('batch1')['batch1']
     development, _ = split_batch1(batch1)
     factory = candidates()['log_ridge_dq_qd'][1]
     folds = []
