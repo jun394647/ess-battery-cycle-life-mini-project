@@ -164,10 +164,10 @@ def evaluate(model_name, dev, hold, batch1, batch2, batch3, summary):
         {'구분': 'Test (Batch 2)', 'MAPE (%)': test_scores['test_batch2']['mape_pct'], '비고': f'Batch 1 전체 학습 후 {len(batch2)}셀 평가'},
         {'구분': 'Gap (Train-Valid)', 'MAPE (%)': gap['valid_minus_train_pp'], '비고': 'Valid − Train, +는 검증 오차 증가, 단위 %p'},
         {'구분': 'Gap (Valid-Test)', 'MAPE (%)': gap['test_minus_valid_pp'], '비고': 'Batch 2 − Valid, +는 배치 이동 시 오차 증가, 단위 %p'},
-        {'구분': 'Gap (Target-Test)', 'MAPE (%)': gap['test_minus_paper_9.1_pp'], '비고': 'Batch 2 − 논문 참고값 9.1%, 단위 %p'},
+        {'구분': 'Gap (Target-Test)', 'MAPE (%)': gap['test_minus_paper_9.1_pp'], '비고': 'Batch 2 − 과제의 논문 초록 기준 9.1%, 단위 %p; 논문 Primary 전체 셀 점수 아님'},
         {'구분': 'Test (Batch 3)', 'MAPE (%)': test_scores['additional_batch3']['mape_pct'], '비고': '추가 평가 40셀'},
         {'구분': 'Gap (Batch2-Batch3)', 'MAPE (%)': gap['batch3_minus_batch2_pp'], '비고': 'Batch 3 − Batch 2, +는 Batch 3 오차 증가, 단위 %p'},
-        {'구분': 'Gap (Target-Test, Batch 3)', 'MAPE (%)': gap['batch3_minus_paper_9.1_pp'], '비고': 'Batch 3 − 논문 참고값 9.1%, 단위 %p'},
+        {'구분': 'Gap (Target-Test, Batch 3)', 'MAPE (%)': gap['batch3_minus_paper_9.1_pp'], '비고': 'Batch 3 − 과제의 논문 초록 기준 9.1%, 단위 %p'},
     ])
     reporting['MAPE (%)'] = reporting['MAPE (%)'].round(2)
     reporting.to_csv(ROOT / 'results' / 'model_performance.csv', index=False)
@@ -177,7 +177,8 @@ def evaluate(model_name, dev, hold, batch1, batch2, batch3, summary):
             'n_holdout': len(hold), 'gaps': gap,
             'interpretation_limits': [
                 'Day 1 exploratory model comparison used all Batch 1 cells before the Day 2 hold-out was fixed.',
-                'Batch 2 labels were seen in Day 1 EDA and an earlier three-feature model evaluation.'
+                'Batch 2 labels were seen in Day 1 EDA and an earlier two-feature model evaluation.',
+                'The paper headline 9.1% is not its all-cell Primary test MAPE; its official training split mixes Batch 1 and Batch 2.'
             ]}
     (OUT / 'protocol.json').write_text(json.dumps(info, ensure_ascii=False, indent=2))
 

@@ -19,6 +19,7 @@
   },
   "interpretation_limits": [
     "Day 1 exploratory model comparison used all Batch 1 cells before the Day 2 hold-out was fixed.",
-    "Batch 2 labels were seen in Day 1 EDA and an earlier three-feature model evaluation."
+    "Batch 2 labels were seen in Day 1 EDA and an earlier two-feature model evaluation.",
+    "The paper headline 9.1% is not its all-cell Primary test MAPE; its official training split mixes Batch 1 and Batch 2."
   ]
 }

@@ -235,11 +235,33 @@ def document_checks():
     assert f'{abs(b3[b3.actual > 1000].error.mean()):.0f}사이클' in day2
     calibration = pd.read_csv(RESULTS / 'day2/batch_calibration/summary.csv').set_index('method')
     assert f'{calibration.loc["median_ratio", "mean_mape_pct"]:.2f}%' in day2
+    trajectory = pd.read_csv(RESULTS / 'day2/trajectory_experiment/qd2_evaluation.csv').set_index('set')
+    paper_features = pd.read_csv(RESULTS / 'day2/paper_feature_experiment/evaluation.csv').set_index('set')
+    shortlife = pd.read_csv(RESULTS / 'day2/shortlife_experiment/evaluation.csv').set_index('set')
+    covariate = pd.read_csv(RESULTS / 'day2/covariate_shift_experiment/evaluation.csv')
+    covariate = covariate[covariate.variant == 'cv_leader'].set_index('set')
+    for experiment in (trajectory, paper_features, shortlife, covariate):
+        assert f'{experiment.loc["batch2", "mape_pct"]:.2f}' in day2
+        assert experiment.loc['batch2', 'mape_pct'] > float(batch2_mape)
+    for relative, evaluation in [
+        ('day2/trajectory_experiment/qd2_predictions.csv', trajectory),
+        ('day2/paper_feature_experiment/predictions.csv', paper_features),
+    ]:
+        predictions = pd.read_csv(RESULTS / relative)
+        for batch_name, group in predictions.groupby('set'):
+            assert np.isclose(100 * mean_absolute_percentage_error(group.actual, group.predicted),
+                              evaluation.loc[batch_name, 'mape_pct'])
+    mixed = pd.read_csv(RESULTS / 'day2/paper_split_diagnostic/summary.csv').set_index('batch')
+    mixed_predictions = pd.read_csv(RESULTS / 'day2/paper_split_diagnostic/predictions.csv')
+    assert np.isclose(mixed.loc['combined', 'mape_pct'], mixed_predictions.ape_pct.mean())
+    assert f'{mixed.loc["combined", "mape_pct"]:.2f}%' in day2
+    assert '14.1%' in day2 and '13.0%' in day2
     return {'day1_figures': len(re.findall(r'!\[[^]]*\]\([^)]+\)', day1)),
             'day2_figures': len(re.findall(r'!\[[^]]*\]\([^)]+\)', day2)),
             'performance_rows_checked': len(table), 'candidate_configs_checked': len(screen),
             'feature_ablation_sets_checked': len(ablation),
-            'refinement_trials_checked': len(refinement)}
+            'refinement_trials_checked': len(refinement),
+            'further_experiments_checked': 4}
 
 
 def main():

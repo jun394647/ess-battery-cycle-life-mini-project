@@ -99,7 +99,21 @@ Day 1 사전 비교에는 Batch 1 전체 41셀이 사용됐습니다. 따라서 
 | Gap (Batch2-Batch3) | **-8.40%p** | Batch 3 - Batch 2 |
 | Gap (Target-Test, Batch 3) | **+1.89%p** | Batch 3 - 9.1% |
 
-9.1%는 원논문의 대표 테스트 오차입니다. 논문과 이 프로젝트의 모델·분할이 달라 재현 성패를 판정하는 동일 조건의 점수는 아닙니다. 정확한 수치는 [results/model_performance.csv](results/model_performance.csv)에 있습니다.
+9.1%는 과제에서 비교 기준으로 제시한 **논문 초록의 대표 수치**입니다. 논문 표의 Primary test 전체 셀 MAPE는 Full 모델 **14.1%**, Discharge 모델 **13.0%**입니다. 논문은 Batch 1·2를 섞어 학습·시험으로 나눴고, 이 프로젝트는 Batch 1만 학습해 Batch 2 전체를 시험했습니다. 따라서 9.1%를 논문의 동일한 Batch 2 전체 셀 점수로 해석하지 않았습니다. 자세한 근거는 [추가 실험과 논문 비교](DAY2-REPORT.md)에, 제출 형식 수치는 [성능표](results/model_performance.csv)에 있습니다.
+
+## 9.1% 목표를 다시 시험한 결과
+
+Batch 1에서만 후보를 비교하고 이후 Batch 2를 사후 평가했습니다. 처음 100사이클의 용량·저항 변화를 추가하고, 논문의 방전 곡선 변수도 구현했습니다. **내부 CV가 낮아진 후보도 Batch 2에서는 현재 모델보다 오차가 컸습니다.**
+
+| 모델 또는 변경 | Batch 1 CV | Batch 1 hold-out | Batch 2 |
+|---|---:|---:|---:|
+| 현재 3변수 로그 Ridge | **7.10%** | **7.15%** | **19.39%** |
+| 초기 평균 `QD`를 2번째 사이클 `QD`로 교체 | 6.46% | 8.23% | 23.58% |
+| 논문형 방전 변수 6개, 이상 용량값 제외 | 5.75% | 10.46% | 23.11% |
+| 짧은 수명 셀에 학습 가중치 추가 | 6.97% | 7.34% | 19.81% |
+| 새 배치의 정답 없이 입력 분포로 가중치 조정 | 6.94% | 6.77% | 19.91% |
+
+논문의 공개 분할처럼 Batch 1·2를 섞어 현재 모델을 다시 학습·시험하면 MAPE는 **11.16%**였습니다. 이는 분할의 영향을 살펴본 사후 진단이며 과제 필수 성능을 대체하지 않습니다. 실험별 변수 정의, 측정값 이상치, 모델 유지 판단은 [Day 2 보고서](DAY2-REPORT.md)에 적었습니다. 추가 실험 코드는 `src/day2_trajectory_experiment.py`, `src/day2_paper_feature_experiment.py`, `src/day2_shortlife_experiment.py`, `src/day2_covariate_shift_experiment.py`, `src/day2_gap_alignment_experiment.py`, `src/day2_paper_split_diagnostic.py`에 있습니다. 원자료가 필요한 실험도 있으므로 기본 `reproduce.py --from-results`에는 포함하지 않았습니다.
 
 ## 배치별 오차
 
@@ -125,7 +139,7 @@ Batch 2의 일부 수명 레이블을 활용한 별도 보정 실험에서는 �
 | 성능 형식·논문 Gap·오류 분석 | [제출 형식 성능표](results/model_performance.csv), [Day 2 성능·오차 분석](DAY2-REPORT.md) |
 | ESS 관점 해석과 한계 | [Day 2 ESS 도메인 해석과 제 생각](DAY2-REPORT.md) |
 
-평가 항목에 필요한 분석과 설명을 모두 담았는지 위 위치에서 확인할 수 있습니다. `results/audit_results.json`은 원본 파일의 셀 수·수명 보정·초기 피처·정책 분할·셀별 예측·성능표를 원자료와 대조한 결과입니다. 참고 성능 9.1%는 달성하지 못했고, Batch 2의 배치 이동 오차와 사후 모델 수정의 한계를 명시했습니다.
+평가 항목에 필요한 분석과 설명을 모두 담았는지 위 위치에서 확인할 수 있습니다. `results/audit_results.json`은 원본 파일의 셀 수·수명 보정·초기 피처·정책 분할·셀별 예측·성능표를 원자료와 대조한 결과입니다. 과제의 참고 성능 9.1%는 달성하지 못했고, Batch 2의 배치 이동 오차와 사후 모델 수정의 한계를 명시했습니다.
 
 ## 자료 출처
 

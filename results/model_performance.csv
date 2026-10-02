@@ -4,7 +4,7 @@ Valid (Batch 1 Hold-out),7.15,정책이 겹치지 않는 10셀
 Test (Batch 2),19.39,Batch 1 전체 학습 후 43셀 평가
 Gap (Train-Valid),0.06,"Valid − Train, +는 검증 오차 증가, 단위 %p"
 Gap (Valid-Test),12.24,"Batch 2 − Valid, +는 배치 이동 시 오차 증가, 단위 %p"
-Gap (Target-Test),10.29,"Batch 2 − 논문 참고값 9.1%, 단위 %p"
+Gap (Target-Test),10.29,"Batch 2 − 과제의 논문 초록 기준 9.1%, 단위 %p; 논문 Primary 전체 셀 점수 아님"
 Test (Batch 3),10.99,추가 평가 40셀
 Gap (Batch2-Batch3),-8.4,"Batch 3 − Batch 2, +는 Batch 3 오차 증가, 단위 %p"
-"Gap (Target-Test, Batch 3)",1.89,"Batch 3 − 논문 참고값 9.1%, 단위 %p"
+"Gap (Target-Test, Batch 3)",1.89,"Batch 3 − 과제의 논문 초록 기준 9.1%, 단위 %p"

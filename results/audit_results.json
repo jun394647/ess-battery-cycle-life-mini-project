@@ -49,6 +49,7 @@
     "performance_rows_checked": 9,
     "candidate_configs_checked": 22,
     "feature_ablation_sets_checked": 4,
-    "refinement_trials_checked": 5
+    "refinement_trials_checked": 5,
+    "further_experiments_checked": 4
   }
 }
