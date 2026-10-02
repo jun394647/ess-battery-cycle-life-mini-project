@@ -169,7 +169,7 @@ def document_checks():
     day2 = (ROOT / 'DAY2-REPORT.md').read_text()
     readme = (ROOT / 'README.md').read_text()
     required_readme_sections = [
-        '프로젝트 개요', '파일 구조', '환경 설정', 'EDA', 'Modeling',
+        '인터랙티브 대시보드', '프로젝트 개요', '파일 구조', '환경 설정', 'EDA', 'Modeling',
         '성능 결과', '오류 분석', 'ESS 도메인 해석', '참고문헌', '팀 구성',
     ]
     assert re.findall(r'^## (.+)$', readme, flags=re.M) == required_readme_sections
@@ -298,12 +298,32 @@ def document_checks():
                       pca.set_index(['candidate', 'set']).loc[('shape_pca1_a0.1', 'batch2'), 'mape_pct'])
     assert np.isclose(alternatives.loc['inverse_life_dq_qd_a1', 'batch2_mape_pct'],
                       inverse.set_index('set').loc['batch2', 'mape_pct'])
+    dashboard = (ROOT / 'docs/index.html').read_text()
+    dashboard_js = (ROOT / 'docs/dashboard.js').read_text()
+    assert 'Plotly.react' in dashboard_js and 'filter-summary' in dashboard_js
+    assert 'docs/dashboard-preview.png' in readme
+    assert 'https://jun394647.github.io/ess-battery-cycle-life-mini-project/' in readme
+    dashboard_data = json.loads((ROOT / 'docs/data/cells.json').read_text())
+    dashboard_cells = pd.DataFrame(dashboard_data['cells'])
+    assert dashboard_data['counts'] == {'batch1': 41, 'batch2': 43, 'batch3': 40}
+    assert dashboard_cells.batch.value_counts().to_dict() == {'batch1': 41, 'batch2': 43, 'batch3': 40}
+    assert dashboard_cells.cell_id.is_unique
+    assert dashboard_cells.loc[dashboard_cells.batch == 'batch1', 'predicted'].isna().all()
+    dashboard_b2 = dashboard_cells[dashboard_cells.batch == 'batch2']
+    dashboard_b3 = dashboard_cells[dashboard_cells.batch == 'batch3']
+    assert len(dashboard_b2) == 43 and len(dashboard_b3) == 40
+    assert np.isclose(dashboard_data['batch2_mape_pct'], baseline_batch2, atol=1e-6)
+    assert np.allclose(dashboard_b2.actual, b2.actual)
+    assert np.allclose(dashboard_b2.predicted, b2.predicted)
+    assert np.allclose(dashboard_b3.actual, b3.actual)
+    assert np.allclose(dashboard_b3.predicted, b3.predicted)
     return {'day1_figures': len(re.findall(r'!\[[^]]*\]\([^)]+\)', day1)),
             'day2_figures': len(re.findall(r'!\[[^]]*\]\([^)]+\)', day2)),
             'performance_rows_checked': len(table), 'candidate_configs_checked': len(screen),
             'feature_ablation_sets_checked': len(ablation),
             'refinement_trials_checked': len(refinement),
-            'further_experiments_checked': 7}
+            'further_experiments_checked': 7,
+            'dashboard_cells_checked': len(dashboard_cells)}
 
 
 def main():

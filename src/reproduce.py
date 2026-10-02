@@ -53,6 +53,7 @@ def main() -> None:
     run('day2_model_compare.py', '--stage', 'diagnose')
     run('day2_batch_calibration.py')
     run('day2_visuals.py')
+    run('build_dashboard.py')
     run('audit_results.py', *(['--artifacts-only'] if args.from_results else []))
     run('build_day1_pdf.py')
     run('build_day1_pdf.py', '--day', '2')

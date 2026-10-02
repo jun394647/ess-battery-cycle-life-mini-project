@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="MIT-Stanford 배터리 셀의 수명, 초기 신호, 모델 오차를 탐색하는 대시보드">
+  <title>ESS 배터리 수명 예측 | 데이터 대시보드</title>
+  <link rel="stylesheet" href="./dashboard.css">
+  <script defer src="https://cdn.plot.ly/plotly-4.1.1.min.js"></script>
+  <script defer src="./dashboard.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <span class="brand-mark" aria-hidden="true">◈</span>
+      <span class="brand">ESS Battery Lab</span>
+      <a href="https://github.com/jun394647/ess-battery-cycle-life-mini-project#readme" target="_blank" rel="noopener">분석 README ↗</a>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="hero" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">DATA EXPLORATION / MODEL REVIEW</p>
+        <h1 id="page-title">ESS 배터리 수명 예측</h1>
+        <p class="lead">세 실험 배치의 수명 분포와 초기 열화 신호를 살펴보고, Batch 1에서 학습한 모델이 Batch 2·3에서 어디를 틀리는지 확인합니다.</p>
+      </div>
+      <div class="hero-note">
+        <span class="dot"></span> 검증된 셀 단위 결과
+        <strong>Batch 1 → Batch 2</strong>
+        <small>124셀 EDA · 83셀 외부 배치 예측</small>
+      </div>
+    </section>
+
+    <section class="filter-panel" aria-labelledby="filter-title">
+      <div class="filter-heading">
+        <div>
+          <p class="eyebrow">FILTERS</p>
+          <h2 id="filter-title">분석 범위 선택</h2>
+        </div>
+        <button id="reset-filters" class="reset" type="button">필터 초기화</button>
+      </div>
+      <div class="filters">
+        <fieldset class="batch-filter">
+          <legend>실험 배치</legend>
+          <label><input type="checkbox" name="batch" value="batch1" checked><span class="swatch batch1"></span>Batch 1 <small>학습 · 41셀</small></label>
+          <label><input type="checkbox" name="batch" value="batch2" checked><span class="swatch batch2"></span>Batch 2 <small>필수 평가 · 43셀</small></label>
+          <label><input type="checkbox" name="batch" value="batch3" checked><span class="swatch batch3"></span>Batch 3 <small>추가 평가 · 40셀</small></label>
+        </fieldset>
+        <label class="select-filter" for="life-band">실제 수명 구간
+          <select id="life-band">
+            <option value="all">전체</option>
+            <option value="short">500사이클 미만</option>
+            <option value="middle">500~1,000사이클</option>
+            <option value="long">1,000사이클 초과</option>
+          </select>
+        </label>
+        <label class="select-filter" for="signal">초기 신호 X축
+          <select id="signal">
+            <option value="delta_q_logvar">ΔQ(V) 로그 분산</option>
+            <option value="early_mean_QD">평균 방전 용량 QD</option>
+            <option value="early_mean_IR">평균 내부저항 IR</option>
+            <option value="first_c_rate">첫 구간 C-rate</option>
+          </select>
+        </label>
+      </div>
+      <p id="filter-summary" class="filter-summary" role="status">데이터를 불러오는 중입니다.</p>
+    </section>
+
+    <section class="kpis" aria-label="선택한 셀의 주요 수치">
+      <article class="kpi"><span>선택된 셀</span><strong id="kpi-cells">—</strong><small>원본 분석 단위: 셀 1개</small></article>
+      <article class="kpi"><span>실제 수명 중앙값</span><strong id="kpi-life">—</strong><small>사이클</small></article>
+      <article class="kpi"><span>500사이클 미만</span><strong id="kpi-short">—</strong><small>선택된 셀 중 비율</small></article>
+      <article class="kpi accent"><span>평가 셀 MAPE</span><strong id="kpi-mape">—</strong><small>Batch 2·3의 선택된 셀만</small></article>
+    </section>
+
+    <div id="load-error" class="error-message" role="alert" hidden></div>
+
+    <section class="charts" aria-label="인터랙티브 분석 그래프">
+      <article class="chart-card">
+        <div class="chart-head"><span class="chart-index">01</span><div><h2>수명 분포</h2><p>배치마다 수명 범위가 얼마나 다른가요?</p></div></div>
+        <div id="life-chart" class="chart" role="img" aria-label="선택한 배치별 실제 사이클 수명 히스토그램"></div>
+        <p class="insight">Batch 1의 최단 수명은 534사이클이고 Batch 2의 43셀 중 33셀은 500사이클 미만입니다. 짧은 수명 구간은 학습 범위 밖입니다.</p>
+      </article>
+      <article class="chart-card">
+        <div class="chart-head"><span class="chart-index">02</span><div><h2>초기 신호와 수명</h2><p>X축 변수를 바꿔 관계를 비교할 수 있습니다.</p></div></div>
+        <div id="signal-chart" class="chart" role="img" aria-label="선택한 초기 신호와 실제 사이클 수명 산점도"></div>
+        <p class="insight">ΔQ(V) 변화가 큰 셀은 세 배치 모두 짧은 수명 방향이지만, 신호의 절대 수준은 배치마다 이동합니다.</p>
+      </article>
+      <article class="chart-card">
+        <div class="chart-head"><span class="chart-index">03</span><div><h2>실제 수명 · 예측 수명</h2><p>점선에 가까울수록 오차가 작습니다.</p></div></div>
+        <div id="prediction-chart" class="chart" role="img" aria-label="Batch 2와 Batch 3의 실제 수명 대비 예측 수명 산점도"></div>
+        <p class="insight">Batch 1은 최종 모델의 학습 배치이므로 이 차트에 학습 셀 예측을 섞지 않았습니다. Batch 2·3의 사후 평가 결과만 표시합니다.</p>
+      </article>
+      <article class="chart-card">
+        <div class="chart-head"><span class="chart-index">04</span><div><h2>예측 오차의 방향</h2><p>0 위는 수명을 길게, 아래는 짧게 예측했습니다.</p></div></div>
+        <div id="error-chart" class="chart" role="img" aria-label="수명 구간과 배치별 예측 오차 상자 그림"></div>
+        <p class="insight">전체 MAPE와 함께 짧은 수명의 과대예측을 봅니다. 실제 운영에서 점검을 늦추는 방향의 오차이기 때문입니다.</p>
+      </article>
+    </section>
+
+    <section class="table-card" aria-labelledby="error-table-title">
+      <div class="chart-head"><span class="chart-index">05</span><div><h2 id="error-table-title">오차가 큰 셀</h2><p>현재 필터에 해당하는 평가 셀을 절대 사이클 오차 순으로 표시합니다.</p></div></div>
+      <div class="table-wrap">
+        <table><thead><tr><th>셀</th><th>배치</th><th>실제</th><th>예측</th><th>예측 − 실제</th><th>절대비율오차</th></tr></thead><tbody id="error-rows"><tr><td colspan="6">데이터를 불러오는 중입니다.</td></tr></tbody></table>
+      </div>
+    </section>
+
+    <footer>
+      <p><strong>데이터 기준</strong> · Severson 외(2019)의 MIT-Stanford 셀 데이터 · Batch 1: 2017-05-12 · Batch 2: 2017-06-30 · Batch 3: 2018-04-12</p>
+      <p>그래프는 <a href="https://github.com/jun394647/ess-battery-cycle-life-mini-project/tree/main/results/model_inputs">셀별 모델 입력</a>과 <a href="https://github.com/jun394647/ess-battery-cycle-life-mini-project/blob/main/results/day2/cell_predictions.csv">평가 예측값</a>으로 만들었습니다. 수명 구간 필터는 실제 수명을 사용하므로 모델 입력이 아닙니다. Batch 2 성능은 이전 결과를 보고 모델을 수정한 사후 평가입니다.</p>
+      <p>제작 · 박준형(U015)　 |　 <a href="https://github.com/jun394647/ess-battery-cycle-life-mini-project">코드와 분석 보기 ↗</a></p>
+    </footer>
+  </main>
+</body>
+</html>

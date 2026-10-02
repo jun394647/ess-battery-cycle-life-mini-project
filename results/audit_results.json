@@ -50,6 +50,7 @@
     "candidate_configs_checked": 22,
     "feature_ablation_sets_checked": 4,
     "refinement_trials_checked": 5,
-    "further_experiments_checked": 7
+    "further_experiments_checked": 7,
+    "dashboard_cells_checked": 124
   }
 }
